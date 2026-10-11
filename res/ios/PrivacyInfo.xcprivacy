@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Privacy-Manifest für Blattwerk.
+
+  Apple verlangt diese Datei, seit die "Required Reason APIs" durchgesetzt
+  werden. Ohne sie weist App Store Connect den Upload zurück, und zwar erst
+  nach der Verarbeitung – der Build ist dann verbrannt und die Build-Nummer
+  verbraucht.
+
+  Der Inhalt muss das Verhalten der App tatsächlich abbilden. Blattwerk erhebt
+  nichts, sendet nichts und trackt nicht; alle Daten bleiben auf dem Gerät.
+  Was hier steht, deckt sich damit mit der Datenschutzerklärung und dem
+  Data-Safety-Formular bei Google.
+
+  Einziger meldepflichtiger Zugriff: UserDefaults. Cordova legt dort eigene
+  Einstellungen ab. Grund CA92.1 = ausschließlich Zugriff auf Daten des
+  eigenen App-Containers.
+
+  Hinweis zur Pflege: Fremde Plugins bringen eigene Privacy-Manifeste mit.
+  Kommt ein Plugin dazu, das eine weitere Required-Reason-API benutzt, gehört
+  der Grund entweder hierher oder in das Manifest des Plugins.
+-->
+<plist version="1.0">
+<dict>
+    <key>NSPrivacyTracking</key>
+    <false/>
+
+    <key>NSPrivacyTrackingDomains</key>
+    <array/>
+
+    <!-- Leer und bewusst so: Die App sammelt keine Daten. -->
+    <key>NSPrivacyCollectedDataTypes</key>
+    <array/>
+
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array>
+                <string>CA92.1</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

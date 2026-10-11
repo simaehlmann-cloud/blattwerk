@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Hintergrundfarbe des adaptiven App-Icons.
+         Bewusst mit eigenem Präfix, damit der Name nicht mit Ressourcen
+         kollidiert, die Cordova selbst erzeugt (z. B. cdv_colors.xml). -->
+    <color name="blattwerk_icon_background">#2440B3</color>
+</resources>
