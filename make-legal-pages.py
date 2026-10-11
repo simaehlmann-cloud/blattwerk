@@ -118,8 +118,9 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
     Mit der Funktion „Ausgefüllte PDFs auswerten“ liest die App die Formularfelder der von
     Ihnen ausgewählten Schüler-PDFs ausschließlich im Arbeitsspeicher des Geräts, vergleicht sie
     mit den hinterlegten Lösungen und zeigt das Ergebnis an. Die Dateien und Ergebnisse werden
-    dabei nicht gespeichert und nicht übertragen. Eine Auswertungstabelle (CSV) entsteht nur, wenn
-    Sie sie ausdrücklich sichern; wohin Sie diese Datei weitergeben, entscheiden Sie.
+    dabei nicht gespeichert und nicht übertragen. Eine Auswertungstabelle (CSV) und korrigierte
+    PDFs (mit Häkchen, Lösungen und Ihrem Kommentar) entstehen nur, wenn Sie sie ausdrücklich
+    erstellen; wohin Sie diese Dateien weitergeben, entscheiden Sie.
   </p>
   <p>
     QR-Codes zur Selbstkontrolle enthalten nur den Text, der auf dem Blatt sichtbar hinterlegt ist
@@ -132,6 +133,8 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
     Die App fordert keine Berechtigungen für Mikrofon, Kontakte, Standort oder Telefonie an.
     Wenn Sie beim Einfügen eines Bildes „Foto aufnehmen“ wählen, fragt Ihr Gerät einmalig nach
     dem Zugriff auf die Kamera. Das Foto wird nur in das gerade bearbeitete Blatt übernommen.
+    Auch das Aufbereiten von Fotos (Entzerren, Aufhellen) und die Texterkennung geschehen vollständig auf Ihrem Gerät;
+    dafür werden keine Daten übertragen.
     Bilder aus Ihrer Fotomediathek wählen Sie über die Auswahl des Betriebssystems aus; die App
     sieht dabei nur die Bilder, die Sie auswählen.
   </p>
@@ -144,7 +147,7 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
   <h2>6. Verbindungen ins Internet</h2>
   <p>
     Die App baut von sich aus keine Netzwerkverbindungen auf. Alle verwendeten Bibliotheken
-    (pdf.js, pdf-lib, fontkit, qrcode-generator) und Schriften (Noto) sind Teil der App und werden nicht von
+    (pdf.js, pdf-lib, fontkit, qrcode-generator, Tesseract) und Schriften (Noto) sind Teil der App und werden nicht von
     fremden Servern geladen. Die Lizenzen finden Sie in der App unter „Lizenzen“.
   </p>
 
@@ -226,6 +229,8 @@ def lizenzen():
         ("pdf-lib 1.17.1", "Andrew Dillon, MIT-Lizenz", "lib/licenses/pdf-lib-LICENSE.md"),
         ("@pdf-lib/fontkit 1.1.1", "Devon Govett, Andrew Dillon, MIT-Lizenz", "lib/licenses/fontkit-LICENSE.txt"),
         ("qrcode-generator 1.4.4", "Kazuhiko Arase, MIT-Lizenz. Das Wort „QR Code“ ist eine eingetragene Marke der DENSO WAVE INCORPORATED.", "lib/licenses/qrcode-generator-LICENSE.txt"),
+        ("tesseract.js 7.0.0", "Texterkennung im Browser, Apache License 2.0", "lib/licenses/tesseract.js-LICENSE.md"),
+        ("tesseract.js-core 6.1.2 (Tesseract OCR) mit deutschem Sprachmodell (tessdata_best, int)", "Tesseract OCR: Google und Mitwirkende; Sprachmodell aus tessdata_best; Apache License 2.0", "lib/licenses/tesseract.js-core-LICENSE.txt"),
         ("Noto Sans, Noto Serif, Noto Sans Mono, Noto Sans Math", "The Noto Project Authors, SIL Open Font License 1.1 (auf die benötigten Schriftzeichen reduziert)", "fonts/OFL.txt"),
         ("Liberation Sans (mit pdf.js ausgeliefert)", "SIL Open Font License 1.1", "lib/pdfjs/standard_fonts/LICENSE_LIBERATION"),
         ("Foxit-Schriften (mit pdf.js ausgeliefert)", "Foxit Software Inc., BSD-Lizenz", "lib/pdfjs/standard_fonts/LICENSE_FOXIT"),

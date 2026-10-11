@@ -223,6 +223,12 @@ async function main() {
     const q = qrRead(ex.student, 1, { x: 330, y: 576, w: 80, h: 80 });
     check('QR-Code lesbar und enthält die Lösungen der Seite', /Aufgabe 2: 2 oder m = 2/.test(q) && /✓ y = 2x \+ 2/.test(q) && /Wertetabelle: −7; −5/.test(q) && !/y = 3x − 2/.test(q), JSON.stringify(q).slice(0, 160));
   }
+  {
+    const pdf = await PDFDocument.load(fs.readFileSync(ex.student)), an = pdf.getPage(0).node.Annots();
+    const order = an.asArray().map(r => pdf.context.lookup(r)).filter(d => String(d.lookup(PDFName.of('Subtype'))) === '/Widget').map(d => { let x = d; while (!x.get(PDFName.of('T')) && x.lookup(PDFName.of('Parent'))) x = x.lookup(PDFName.of('Parent')); return x.lookup(PDFName.of('T')).decodeText(); });
+    const want = ['Name', 'Datum', 'A1 a', 'A1 b', 'A1 c', 'A1 d', 'Aufgabe 2', 'Wertetabelle Z2S2'];
+    check('Tab-Reihenfolge: Zeile für Zeile von oben nach unten', want.every((n, i) => order[i] === n) && String(pdf.getPage(0).node.get(PDFName.of('Tabs'))) === '/R', order.slice(0, 9).join(' > '));
+  }
   check('Beispielblatt-PDF unter 1 MB', fs.statSync(ex.student).size < 1e6, fs.statSync(ex.student).size + ' Bytes');
 
   /* 2b. Jede Schrift und jeder Schnitt muss im PDF sichtbar sein. */
@@ -405,6 +411,43 @@ async function main() {
   await page.click('#panel [data-act="shape-grid"]'); await dragPt(300, 500, 420, 570);
   const grid = await S(`S.objs.find(o => o.type === 'shape' && o.kind === 'grid')`);
   check('Rechenkästchen gezogen', grid && grid.cols >= 7 && grid.rows >= 4, grid && grid.cols + 'x' + grid.rows);
+  /* Kreis, Dreieck und Vierecke (auf Seite 2) */
+  {
+    const spots = { circle: [120, 120, 180, 120], triangle: [260, 160, 380, 160], trapez: [420, 160, 540, 160], parallel: [60, 330, 180, 330], raute: [240, 330, 380, 330], drachen: [420, 300, 540, 300] };
+    for (const [k, [x1, y1, x2, y2]] of Object.entries(spots)) {
+      await key('s'); await page.click(`#panel [data-act="shape-${k}"]`); await dragPt(x1, y1, x2, y2, 1);
+    }
+    const sh = await S(`Object.fromEntries(S.objs.filter(o => o.type === 'shape' && o.page === S.pages[1].id).map(o => [o.kind, o]))`);
+    const pt = (o, i) => ({ x: o['x' + i], y: o['y' + i] }), d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    check('Kreis, Dreieck, Trapez, Parallelogramm, Raute, Drachen gezogen', Object.keys(spots).every(k => sh[k]), Object.keys(sh).join(','));
+    check('Kreis: Mittelpunkt und Radius aus dem Ziehen', sh.circle && Math.abs(d(pt(sh.circle, 1), pt(sh.circle, 2)) - 60) < 8 && sh.circle.center === true);
+    const tri = sh.triangle;
+    check('Dreieck gleichseitig angelegt, Ecken beschriftet', tri && Math.abs(d(pt(tri, 1), pt(tri, 2)) - d(pt(tri, 2), pt(tri, 3))) < 3 && tri.labels === true);
+    /* Ecke ziehen: Raute bleibt Raute, Trapez bleibt Trapez, Drachen bleibt Drachen */
+    async function dragHandle(o, k, dx, dy) {
+      await page.evaluate(id => window.__bw.selectIds([id]), o.id);
+      await at(o['x' + k], o['y' + k], 1);
+      const hb = await page.locator(`.obj[data-id="${o.id}"] .hdl.pt[data-d="p${k}"]`).boundingBox();
+      await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2); await page.mouse.down();
+      await page.mouse.move(hb.x + hb.width / 2 + dx, hb.y + hb.height / 2 + dy, { steps: 6 }); await page.mouse.up();
+      return S(`B.find('${o.id}')`);
+    }
+    const ra = await dragHandle(sh.raute, 1, -30, -20);
+    const rs = [1, 2, 3, 4].map(i => d(pt(ra, i), pt(ra, i % 4 + 1)));
+    check('Raute: nach dem Ziehen einer Ecke alle Seiten gleich', Math.max(...rs) - Math.min(...rs) < 0.6 && ra.x1 < sh.raute.x1 - 10, rs.map(v => v.toFixed(1)).join('/'));
+    const tz = await dragHandle(sh.trapez, 3, 25, -30);
+    const cross = (a, b, c, e) => (b.x - a.x) * (e.y - c.y) - (b.y - a.y) * (e.x - c.x);
+    check('Trapez: AB bleibt parallel zu CD', Math.abs(cross(pt(tz, 1), pt(tz, 2), pt(tz, 4), pt(tz, 3))) < 40 && tz.y3 < sh.trapez.y3 - 10, cross(pt(tz, 1), pt(tz, 2), pt(tz, 4), pt(tz, 3)).toFixed(1));
+    const dr = await dragHandle(sh.drachen, 2, -25, 15);
+    const axisDist = p => { const a = pt(dr, 1), c = pt(dr, 3); return ((c.x - a.x) * (p.y - a.y) - (c.y - a.y) * (p.x - a.x)) / d(a, c); };
+    check('Drachen: B und D bleiben spiegelbildlich zur Achse AC', Math.abs(axisDist(pt(dr, 2)) + axisDist(pt(dr, 4))) < 0.6 && d(pt(dr, 1), pt(dr, 2)).toFixed(1) === d(pt(dr, 1), pt(dr, 4)).toFixed(1));
+    const pa = await dragHandle(sh.parallel, 3, 20, -15);
+    check('Parallelogramm bleibt Parallelogramm', Math.abs((pa.x1 + pa.x3) - (pa.x2 + pa.x4)) < 0.3 && Math.abs((pa.y1 + pa.y3) - (pa.y2 + pa.y4)) < 0.3);
+    check('Panel zeigt Seitenlängen und Winkel', /Winkel: α = .*β = .*γ = .*δ = /.test(await page.textContent('#panel')) && /Seiten: AB = /.test(await page.textContent('#panel')));
+    await page.click(`#panel button[data-set="fillc"][data-v='"#fff3b0"']`);
+    check('Viereck gefüllt', (await S(`B.find('${sh.parallel.id}').fillc`)) === '#fff3b0');
+    await key('Escape');
+  }
   /* Endpunkt des Pfeils ziehen */
   await key('v');
   await clickAt((arrow.x1 + arrow.x2) / 2, arrow.y1);
@@ -450,10 +493,12 @@ async function main() {
 
   /* ================================================================ */
   section('5. Neues Blatt: Querformat mit Koordinaten-Hintergrund');
+  await key('s');
   await page.click('#btnNew');
   await page.click('[data-bg="coord"]'); await page.click('[data-land="1"]'); await page.click('.dlg [data-r="1"]');
   await page.waitForTimeout(300);
   check('Neues Blatt: Querformat mit Koordinaten-Hintergrund', await S(`S.pages[0].w > S.pages[0].h && S.pages[0].bg.type === 'coord'`));
+  check('Neues Blatt startet mit „Auswählen“', (await S('S.tool')) === 'select');
   check('Neues Blatt: Kopfzeile mit drei Feldern', (await S(`S.objs.filter(o => o.type === 'field').length`)) === 3);
   ex = await exportFiles('vorlage-koordinaten', ['student']);
   check('Ohne Hilfen und Lösungen: Export ohne Rückfrage', !ex.dialog && !!ex.student);
@@ -537,10 +582,14 @@ async function main() {
     await page.mouse.move(cb.x + cb.width * 0.08, cb.y + cb.height * 0.06); await page.mouse.down();
     await page.mouse.move(cb.x + cb.width * 0.6, cb.y + cb.height * 0.12, { steps: 6 }); await page.mouse.up();
     const i0 = await count('image');
+    await page.fill('#cr-cap', 'Testbuch Mathe');
     await page.click('.dlg [data-r="1"]');
     await page.waitForFunction(n => window.__bw.S.objs.filter(o => o.type === 'image').length === n + 1, i0, { timeout: 10000 });
+    await page.waitForFunction(() => { const S = window.__bw.S, o = S.objs.find(x => x.id === S.sel); return o && o.caption; }, null, { timeout: 5000 }).catch(() => {});
     const im = await sel();
     check('Ausschnitt als Bild in Originalgröße eingefügt', im.type === 'image' && Math.abs(im.w - 595 * 0.52) < 8, im.w);
+    check('Ausschnitt: Quellenangabe mit Seitenzahl', im.caption === 'Testbuch Mathe, S. 1', im.caption);
+    check('Quellenangabe steht im Bearbeitungsfeld und unter dem Bild', (await page.inputValue('#p-caption')) === im.caption && (await page.locator('.o-image .cap').first().textContent()) === im.caption);
   }
   await page.setInputFiles('#fileImg', path.join(ROOT, 'icon-192.png'));
   await page.waitForFunction(() => window.__bw.S.objs.filter(o => o.type === 'image').length === 2, null, { timeout: 10000 });
@@ -549,7 +598,16 @@ async function main() {
     const pdf = await PDFDocument.load(fs.readFileSync(ex.student));
     const xo = pdf.getPages().some(pg => { const r = pg.node.Resources(); const x = r && r.lookup(PDFName.of('XObject')); return x && x.keys().length > 0; });
     check('Bilder werden in das PDF eingebettet', xo);
+    const tx = await pdfText(fs.readFileSync(ex.student));
+    check('Quellenangabe steht als Text im PDF', tx.join(' ').includes('Testbuch Mathe, S. 1'), tx.join(' ').slice(0, 200));
   }
+  /* Erneut ausschneiden: Quelle ist vorbelegt */
+  await page.evaluate(() => { document.getElementById('filePdf').dataset.mode = 'crop'; });
+  await page.setInputFiles('#filePdf', fix);
+  await page.waitForSelector('#cr-wrap canvas', { timeout: 10000 });
+  check('Ausschneiden: zuletzt benutzte Quelle ist vorbelegt', (await page.inputValue('#cr-cap')) === 'Testbuch Mathe');
+  await page.click('.dlg [data-r="0"]');
+
 
   /* ================================================================ */
   section('8. Projektdatei');
@@ -629,6 +687,33 @@ async function main() {
     check('CSV: UTF-8 mit BOM, Semikolon, alle Schüler', csv.charCodeAt(0) === 0xfeff && csv.split('\r\n')[0].startsWith('\ufeffName;Datei;Richtig') && /\r\nAli;/.test(csv) && /\r\nBerta;/.test(csv));
     check('CSV: Formel-Einschleusung entschärft', csv.includes(`"'=HYPERLINK(""x"")"`), csv.split('\r\n')[2].slice(0, 120));
     check('Auswertung speichert nichts', (await S('S.objs.length')) === 26);
+    /* Korrigierte PDFs zurückgeben */
+    await page.fill('.dlg [data-cmt="0"]', 'Super gemacht, weiter so!');
+    await page.check('.dlg #ev-all');
+    const got = [], onDl = d => got.push(d); page.on('download', onDl);
+    await page.click('.dlg [data-correct]');
+    const t0 = Date.now(); while (got.length < 4 && Date.now() - t0 < 30000) await page.waitForTimeout(100);
+    page.off('download', onDl);
+    const cf = {};
+    for (const d of got) { const f = path.join(OUT, 'korr-' + d.suggestedFilename()); await d.saveAs(f); cf[d.suggestedFilename()] = f; }
+    check('Korrigierte PDFs: je Schüler eine Datei plus Sammeldatei', got.length === 4 && cf['Ali - korrigiert.pdf'] && cf['Berta - korrigiert.pdf'] && Object.keys(cf).some(n => / - alle korrigiert\.pdf$/.test(n)), Object.keys(cf).join(', '));
+    if (cf['Ali - korrigiert.pdf']) {
+      const ta = (await pdfText(fs.readFileSync(cf['Ali - korrigiert.pdf'])))[0], tb = (await pdfText(fs.readFileSync(cf['Berta - korrigiert.pdf'])))[0];
+      check('Korrigiert: Ergebnis und Kommentar oben auf dem Blatt', ta.includes('Ergebnis: 12 von 12 richtig (100 %)') && ta.includes('Super gemacht'), ta.slice(0, 120));
+      check('Korrigiert: Lösung bei falschen Antworten eingetragen', tb.includes('Ergebnis: 8 von 12 richtig (67 %)') && tb.includes('-> -1') && tb.includes('-> 5'), tb.slice(-160));
+      check('Korrigiert: Antworten eingefroren (keine Felder mehr), Antworten sichtbar – auch ohne gespeicherte Ansicht', (await fieldNamesOf(cf['Ali - korrigiert.pdf'])).length === 0 && ta.includes('m = 2') && tb.includes('Berta') && tb.includes('2,0'));
+      const perr = f => String(require('child_process').spawnSync('pdftotext', [f, '-']).stderr).trim();
+      const errsK = Object.values(cf).map(perr).filter(Boolean);
+      check('Korrigierte PDFs fehlerfrei lesbar (poppler)', errsK.length === 0, errsK[0]);
+      if (HAVE_PDFTOPPM) {
+        const g = pixels(cf['Ali - korrigiert.pdf'], 1, { x: 300, y: 270, w: 260, h: 110 }, (r, gg, b) => gg > 100 && r < 90 && b < 90, false);
+        const rd = redRatio(cf['Berta - korrigiert.pdf'], 1, { x: 60, y: 140, w: 480, h: 320 });
+        const ra = redRatio(cf['Ali - korrigiert.pdf'], 1, { x: 60, y: 140, w: 480, h: 320 });
+        check('Korrigiert: grüne Häkchen, rote Kreuze nur bei Fehlern', g > 0.0005 && rd > 0.0003 && ra < 0.00005, [g, rd, ra].map(v => v.toFixed(5)).join(' / '));
+      }
+      const all = Object.keys(cf).find(n => / - alle korrigiert\.pdf$/.test(n));
+      check('Sammeldatei enthält alle drei Schüler', (await PDFDocument.load(fs.readFileSync(cf[all]))).getPageCount() === 3);
+    }
     await page.click('.dlg [data-r="1"]');
   }
 
@@ -719,6 +804,351 @@ async function main() {
   check('Eigene Schrift nach Neustart noch da', (await S('Object.keys(S.fonts).length')) === 1 && /^u:/.test(await S('S.objs[0].font')));
 
   /* ================================================================ */
+  section('16. Vorlagen: Entfernen, Lösungen ausblenden, Lücken, Formularfelder');
+  {
+    /* Selbst erzeugte Vorlage mit Lösung, Bild und Unterstrichen */
+    const d = await PDFDocument.create(), hv = await d.embedFont(StandardFonts.Helvetica);
+    const pg1 = d.addPage([595, 842]);
+    pg1.drawText('Aufgabe 1: Berechne 3x + 4 = 19.', { x: 60, y: 760, size: 13, font: hv });
+    pg1.drawText('Loesung: x = 5', { x: 60, y: 735, size: 13, font: hv });
+    pg1.drawText('Aufgabe 2: Antwort: ____________________', { x: 60, y: 690, size: 13, font: hv });
+    pg1.drawText('Zwischenergebnis vorher GEHEIM42 nachher Ende.', { x: 60, y: 650, size: 13, font: hv });
+    pg1.drawImage(await d.embedPng(fs.readFileSync(path.join(ROOT, 'icon-192.png'))), { x: 60, y: 500, width: 90, height: 90 });
+    const ff = path.join(OUT, 'vorlage-loesung.pdf'); fs.writeFileSync(ff, await d.save());
+    await page.setInputFiles('#fileOpen', ff);
+    await page.waitForFunction(() => document.getElementById('docName').value === 'vorlage-loesung', null, { timeout: 15000 });
+    await page.waitForTimeout(500);
+    await key('r');
+    await page.waitForSelector('.ebox', { timeout: 10000 });
+    check('Entfernen: Textzeilen und Bild im PDF erkannt', (await page.locator('.ebox').count()) >= 5 && (await page.locator('.ebox[data-k^="I"]').count()) === 1, await page.locator('.ebox').count());
+    await page.click(`#panel [data-eset][data-v='true']`);
+    const kL = await S(`(() => { const L = S.lines[S.pages[0].id].list.find(l => /Loesung/.test(l.str)); return L && L.k; })()`);
+    await page.locator(`.ebox[data-k="L${kL}"]`).scrollIntoViewIfNeeded(); await page.locator(`.ebox[data-k="L${kL}"]`).click();
+    await page.click(`#panel [data-eset][data-v='false']`);
+    await page.locator('.ebox[data-k^="I"]').scrollIntoViewIfNeeded(); await page.locator('.ebox[data-k^="I"]').click();
+    const wo = await S(`S.objs.filter(o => o.type === 'whiteout').map(o => ({ solShow: !!o.solShow, color: o.color, w: o.w }))`);
+    check('Antippen entfernt: Lösung nur für Schüler, Bild überall', wo.length === 2 && wo.filter(o => o.solShow).length === 1 && wo.every(o => o.color === '#ffffff'), JSON.stringify(wo));
+    /* Rahmen über einen Teil einer Zeile: nur dieser Teil */
+    const hvW = t => hv.widthOfTextAtSize(t, 13), gx = 60 + hvW('Zwischenergebnis vorher '), gw = hvW('GEHEIM42');
+    await dragPt(gx - 1, 842 - 650 - 12, gx + gw + 1, 842 - 650 + 4);
+    check('Rahmen über einen Teil der Zeile: Abdeckung nur dort', (await S(`S.objs.filter(o => o.type === 'whiteout').length`)) === 3);
+    await key('v');
+    ex = await exportFiles('vorlage-entfernt', ['student', 'solution']);
+    const tS = (await pdfText(fs.readFileSync(ex.student)))[0], tL = (await pdfText(fs.readFileSync(ex.solution)))[0];
+    check('Schülerfassung: Lösung und Wort wirklich gelöscht (nicht kopierbar), Rest der Zeile bleibt', !tS.includes('x = 5') && !tS.includes('GEHEIM42') && tS.includes('vorher') && tS.includes('nachher Ende') && tS.includes('Aufgabe 1'), tS);
+    check('Lösungsblatt: Lösung aus der Vorlage bleibt sichtbar', tL.includes('Loesung: x = 5') && !tL.includes('GEHEIM42'), tL);
+    const imgCount = async f => { const pdf = await PDFDocument.load(fs.readFileSync(f)); let n = 0; for (const [, o] of pdf.context.enumerateIndirectObjects()) if (o.dict && typeof o.dict.lookup === 'function' && String(o.dict.lookup(PDFName.of('Subtype'))) === '/Image') n++; return n; };
+    const perr2 = String(require('child_process').spawnSync('pdftotext', [ex.student, '-']).stderr).trim();
+    check('PDF mit entfernten Inhalten fehlerfrei lesbar (poppler)', !perr2, perr2);
+    check('Entferntes Bild ist auch aus der Datei verschwunden', (await imgCount(ex.student)) === 0 && (await imgCount(ex.solution)) === 0);
+    if (HAVE_PDFTOPPM) { const ink = inkRatio(ex.student, 1, { x: 60, y: 842 - 772, w: 200, h: 16 }); check('Übriger Text der Vorlage unverändert sichtbar', ink > 0.05, ink.toFixed(3)); }
+    /* Bild nur teilweise abgedeckt: Seite als Bild, Abdeckung eingebrannt */
+    if (HAVE_PDFTOPPM) {
+      const res = await page.evaluate(async () => {
+        const B = window.__bw, S = B.S, p = S.pages[0];
+        const keep = S.objs.slice();
+        S.objs = S.objs.filter(o => !(o.type === 'whiteout' && o.eraseKey && o.eraseKey.startsWith('I')));
+        S.objs.unshift({ id: 'teil', page: p.id, type: 'whiteout', layer: 'base', x: 60, y: 842 - 590, w: 45, h: 45, color: '#ffffff' });
+        try { const a = await B.buildPdf(); let s = ''; for (let i = 0; i < a.bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, a.bytes.subarray(i, i + 0x8000)); return [btoa(s), a.rasterPages, a.warnings]; }
+        finally { S.objs = keep; }
+      });
+      const rf = path.join(OUT, 'teilbild.pdf'); fs.writeFileSync(rf, Buffer.from(res[0], 'base64'));
+      const dir = path.join(OUT, 'teilbild'); fs.mkdirSync(dir, { recursive: true });
+      execFileSync('pdfimages', ['-png', rf, path.join(dir, 'b')]);
+      const img = fs.readdirSync(dir).map(f => path.join(dir, f))[0];
+      /* Das ausgegebene Seitenbild: Bereich unter der Abdeckung muss weiß sein */
+      const py = execFileSync('python3', ['-c', `from PIL import Image\nim=Image.open(${JSON.stringify(img)}).convert('L');w,h=im.size;k=w/595\nbox=(int(62*k),int(254*k),int(103*k),int(295*k));px=list(im.crop(box).getdata());print(sum(1 for v in px if v<200)/len(px))`]).toString().trim();
+      check('Bild nur teilweise abgedeckt: Seite als Bild, darunter wirklich weiß', res[1].length === 1 && +py < 0.01 && res[2].some(w => /als Bild/.test(w)), res[1] + ' / ' + py);
+    }
+    /* Lücken erkennen */
+    await page.click('#panel [data-act="detect"]');
+    await page.waitForTimeout(800);
+    check('Lücken erkennen: Unterstrich-Lücke wird zum Feld', (await S(`S.objs.filter(o => o.type === 'field').length`)) === 1 && (await S(`S.objs.find(o => o.type === 'field').x`)) > 150);
+    await page.keyboard.press('Control+z');
+    check('Rückgängig nimmt erkannte Felder zurück', (await S(`S.objs.filter(o => o.type === 'field').length`)) === 0);
+  }
+  /* Echte PDFs aus anderen Programmen: GEHEIM42 löschen, Rest bleibt */
+  {
+    const VOR = path.join(ROOT, 'test', 'vorlagen');
+    const words = file => { const x = execFileSync('pdftotext', ['-bbox', '-f', '1', '-l', '1', file, '-'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString(); return [...x.matchAll(/<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<\/word>/g)].map(m => ({ x0: +m[1], y0: +m[2], x1: +m[3], y1: +m[4], t: m[5] })); };
+    const ok = [], bad = [];
+    for (const f of ['libreoffice-blocksatz.pdf', 'latex.pdf', 'browserdruck.pdf', 'reportlab.pdf', 'matplotlib-type3.pdf', 'matplotlib-cid.pdf', 'formular-xobject-gedreht.pdf']) {
+      const file = path.join(VOR, f);
+      if (!HAVE_PDFTOPPM || !fs.existsSync(file)) { bad.push(f + ' fehlt'); continue; }
+      const w = words(file).find(v => v.t.includes('GEHEIM42'));
+      await page.setInputFiles('#fileOpen', file);
+      await page.waitForFunction(n => document.getElementById('docName').value === n, f.replace(/\.pdf$/, ''), { timeout: 15000 });
+      const res = await page.evaluate(async ([w, rotated]) => {
+        const B = window.__bw, S = B.S, p = S.pages[0];
+        /* pdftotext liefert Koordinaten der gedrehten Ansicht – wie Blattwerk */
+        S.objs.push({ id: 'g42', page: p.id, type: 'whiteout', layer: 'base', x: w.x0 - 0.5, y: w.y0 - 0.5, w: w.x1 - w.x0 + 1, h: w.y1 - w.y0 + 1, color: '#ffffff' });
+        const a = await B.buildPdf(); let s = ''; for (let i = 0; i < a.bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, a.bytes.subarray(i, i + 0x8000));
+        return [btoa(s), a.rasterPages.length];
+      }, [w, false]);
+      const of = path.join(OUT, 'geloescht-' + f); fs.writeFileSync(of, Buffer.from(res[0], 'base64'));
+      const t = execFileSync('pdftotext', [of, '-'], { stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+      if (!t.includes('GEHEIM42') && t.includes('vorher') && t.includes('nachher') && res[1] === 0) ok.push(f); else bad.push(f + (res[1] ? ' (als Bild)' : '') + ': ' + t.replace(/\s+/g, ' ').slice(0, 80));
+    }
+    check('Echtes Löschen in PDFs aus LibreOffice, LaTeX, Browser, ReportLab, Matplotlib, Formular-XObject', bad.length === 0, bad.join(' | '));
+  }
+  /* Lücken in echten Vorlagen */
+  {
+    const VOR = path.join(ROOT, 'test', 'vorlagen');
+    await page.setInputFiles('#fileOpen', path.join(VOR, 'luecken-text.pdf'));
+    await page.waitForFunction(() => document.getElementById('docName').value === 'luecken-text', null, { timeout: 15000 });
+    await page.waitForTimeout(400);
+    await page.click('#panel [data-act="detect"]'); await page.waitForTimeout(800);
+    const a = await S(`[S.objs.filter(o => o.type === 'field').length, S.objs.filter(o => o.type === 'check').length]`);
+    check('Lücken (LibreOffice): Unterstriche und Punktlinie → 3 Felder, ☐ → 2 Kästchen', a[0] === 3 && a[1] === 2, a.join('/'));
+    await page.setInputFiles('#fileOpen', path.join(VOR, 'luecken-linien.pdf'));
+    await page.waitForFunction(() => document.getElementById('docName').value === 'luecken-linien', null, { timeout: 15000 });
+    await page.waitForTimeout(400);
+    await page.click('#panel [data-act="detect"]'); await page.waitForTimeout(800);
+    const b = await S(`S.objs.filter(o => o.type === 'field' || o.type === 'check').map(o => o.type + (o.multi ? '+' : ''))`);
+    check('Lücken (Linien): 3 Schreiblinien → 1 mehrzeiliges Feld, Einzellinie → Feld, Tabelle und Unterstreichung nicht, 3 Kästchen', b.filter(x => x === 'field+').length === 1 && b.filter(x => x === 'field').length === 1 && b.filter(x => x === 'check').length === 3, b.join(','));
+  }
+  /* Vorhandene Formularfelder übernehmen, Einfachauswahl und Auswahlliste auswerten */
+  {
+    const d = await PDFDocument.create(), hv = await d.embedFont(StandardFonts.Helvetica), pg1 = d.addPage([595, 842]), fm = d.getForm();
+    pg1.drawText('Formular vom Verlag', { x: 60, y: 780, size: 16, font: hv });
+    const t = fm.createTextField('Ergebnis'); t.addToPage(pg1, { x: 60, y: 700, width: 150, height: 20, font: hv });
+    const rg = fm.createRadioGroup('Frage1'); rg.addOptionToPage('A', pg1, { x: 60, y: 650, width: 12, height: 12 }); rg.addOptionToPage('B', pg1, { x: 100, y: 650, width: 12, height: 12 }); rg.addOptionToPage('C', pg1, { x: 140, y: 650, width: 12, height: 12 });
+    const dd = fm.createDropdown('Aussage'); dd.setOptions(['richtig', 'falsch']); dd.addToPage(pg1, { x: 60, y: 600, width: 120, height: 20, font: hv });
+    const cb = fm.createCheckBox('Erledigt'); cb.addToPage(pg1, { x: 60, y: 560, width: 12, height: 12 });
+    const ff = path.join(OUT, 'verlagsformular.pdf'); fs.writeFileSync(ff, await d.save());
+    await page.setInputFiles('#fileOpen', ff);
+    await page.waitForFunction(() => document.getElementById('docName').value === 'verlagsformular', null, { timeout: 15000 });
+    const imp = await S(`S.objs.map(o => o.type + ':' + (o.ftype || '') + ':' + (o.group || ''))`);
+    check('Formularfelder übernommen: Textfeld, Einfachauswahl (3), Auswahlliste, Kästchen', imp.filter(x => x === 'field:text:').length === 1 && imp.filter(x => x === 'check::Frage1').length === 3 && imp.includes('field:choice:') && imp.includes('check::'), imp.join(' '));
+    await page.waitForFunction(() => /Formularfelder übernommen/.test(document.getElementById('toast').textContent), null, { timeout: 5000 }).catch(() => {});
+    check('Hinweis nach dem Öffnen nennt die übernommenen Felder', /6 Formularfelder übernommen/.test(await toastText()), await toastText());
+    await page.evaluate(() => { const S = window.__bw.S; S.objs.find(o => o.name === 'Ergebnis').solution = '42'; const r = S.objs.filter(o => o.group === 'Frage1'); r[1].correct = true; S.objs.find(o => o.ftype === 'choice').solution = 'falsch'; window.__bw.renderAll(); });
+    ex = await exportFiles('verlag', ['student']);
+    const pdf = await PDFDocument.load(fs.readFileSync(ex.student)), kinds = pdf.getForm().getFields().map(f => f.constructor.name + ':' + f.getName()).sort();
+    const widgetsOnPage = pdf.getPage(0).node.Annots().asArray().map(r => pdf.context.lookup(r)).filter(d => String(d.lookup(PDFName.of('Subtype'))) === '/Widget').length;
+    check('Export: alte Feld-Widgets entfernt (6 statt 12)', widgetsOnPage === 6, widgetsOnPage);
+    check('Export: Felder ersetzt, nicht verdoppelt (Radio, Dropdown, Text, Kästchen)', kinds.join(',') === ['PDFCheckBox:Erledigt', 'PDFDropdown:Aussage', 'PDFRadioGroup:Frage1', 'PDFTextField:Ergebnis'].join(','), kinds.join(','));
+    const fill = async (name, f) => { const x = await PDFDocument.load(fs.readFileSync(ex.student)), g = x.getForm(); f(g); const o = path.join(OUT, name); fs.writeFileSync(o, await x.save()); return o; };
+    const opts = pdf.getForm().getRadioGroup('Frage1').getOptions();
+    const s1 = await fill('verlag-a.pdf', g => { g.getTextField('Ergebnis').setText('42'); g.getRadioGroup('Frage1').select(opts[1]); g.getDropdown('Aussage').select('falsch'); });
+    const s2 = await fill('verlag-b.pdf', g => { g.getTextField('Ergebnis').setText('41'); g.getRadioGroup('Frage1').select(opts[2]); g.getDropdown('Aussage').select('richtig'); });
+    await page.setInputFiles('#fileEval', [s1, s2]);
+    await page.waitForSelector('.dlg .evtable', { timeout: 15000 });
+    const rows = await page.locator('.dlg .evtable').nth(1).locator('tr').allTextContents();
+    check('Auswertung von Einfachauswahl und Auswahlliste', rows.some(r => r.startsWith('verlag-a3/3100 %')) && rows.some(r => r.startsWith('verlag-b0/30 %')), rows.slice(1).map(r => r.slice(0, 16)).join(' | '));
+    await page.click('.dlg [data-r="1"]');
+  }
+  /* In Blattwerk angelegt: Einfachauswahl, Auswahlliste, Ziffernkästchen, automatische Schriftgröße, Prüfbericht */
+  {
+    await page.evaluate(() => { window.__bw.newSheet(false, { bg: 'white' }); document.getElementById('docName').value = 'Feldarten'; });
+    await key('k'); await clickAt(80, 100); await key('k'); await clickAt(80, 130); await key('k'); await clickAt(80, 160);
+    const ids = await S(`S.objs.filter(o => o.type === 'check').map(o => o.id)`);
+    await page.evaluate(ids => window.__bw.selectIds(ids), ids);
+    await page.click('#panel [data-act="radio-join"]');
+    check('Als Einfachauswahl verbinden: runde Optionsfelder', (await S(`new Set(S.objs.filter(o => o.type === 'check').map(o => o.group)).size`)) === 1 && (await page.locator('.o-check .cb.round').count()) === 3);
+    await key('Escape');
+    await key('f'); await dragPt(80, 220, 280, 242);
+    await page.click(`#panel button[data-set="ftype"][data-v='"choice"']`);
+    check('Auswahlliste mit Vorgabe richtig/falsch', JSON.stringify((await sel()).choices) === '["richtig","falsch"]' && (await page.locator('.obj.sel .drop').count()) === 1);
+    await key('Escape');
+    await key('f'); await dragPt(80, 280, 200, 302);
+    await page.click(`#panel button[data-set="ftype"][data-v='"comb"']`);
+    check('Ziffernkästchen (4)', (await sel()).comb === 4);
+    await key('Escape');
+    await key('f'); await dragPt(80, 340, 280, 352);
+    await page.check('#p-autoSize');
+    await key('Escape');
+    const chk = await page.evaluate(() => window.__bw.formCheck());
+    check('Prüfbericht: niedriges Feld mit Auto-Schrift ist in Ordnung', !chk.warn.some(w => /zu niedrig/.test(w)), chk.warn.join(' | '));
+    await page.evaluate(() => { const S = window.__bw.S; const f = S.objs.filter(o => o.type === 'field').pop(); f.autoSize = false; S.objs.push(Object.assign({}, f, { id: 'dupl', x: f.x + 20, autoSize: false })); window.__bw.renderAll(); });
+    const chk2 = await page.evaluate(() => window.__bw.formCheck());
+    check('Prüfbericht: zu niedrig, Überlappung, doppelter Name', chk2.warn.some(w => /zu niedrig/.test(w)) && chk2.warn.some(w => /überlappen/.test(w)) && chk2.warn.some(w => /heißen/.test(w)), chk2.warn.length);
+    await page.click('#btnExport');
+    check('Exportdialog zeigt die Hinweise', /Bitte prüfen/.test(await page.textContent('.dlg')));
+    await page.click('.dlg [data-r="1"]');
+    await page.waitForTimeout(2500);
+    await page.evaluate(() => { const S = window.__bw.S; S.objs = S.objs.filter(o => o.id !== 'dupl'); S.objs.filter(o => o.type === 'field').pop().autoSize = true; window.__bw.renderAll(); });
+    ex = await exportFiles('feldarten', ['student']);
+    const pdf = await PDFDocument.load(fs.readFileSync(ex.student)), fo = pdf.getForm();
+    const kinds = fo.getFields().map(f => f.constructor.name);
+    const comb = fo.getFields().find(f => f.constructor.name === 'PDFTextField' && f.getMaxLength && f.getMaxLength() === 4);
+    const auto = fo.getFields().filter(f => f.constructor.name === 'PDFTextField').some(f => / 0 Tf/.test(f.acroField.getDefaultAppearance() || ''));
+    check('Export: Optionsfeld-Gruppe, Auswahlliste, Ziffernkästchen, automatische Schriftgröße', kinds.includes('PDFRadioGroup') && kinds.includes('PDFDropdown') && !!comb && comb.isCombed() && auto, kinds.join(','));
+  }
+  /* Platz schaffen auf einer PDF-Seite */
+  {
+    await page.setInputFiles('#fileOpen', fix);
+    await page.waitForFunction(() => window.__bw.S.pages.length === 3 && document.getElementById('docName').value === 'vorlage', null, { timeout: 15000 });
+    await page.click('#panel [data-act="split"]');
+    await clickAt(300, 842 - 705, 0);
+    check('Seite geteilt: eine Seite mehr, zwei Abdeckungen', (await S('S.pages.length')) === 4 && (await S(`S.objs.filter(o => o.type === 'whiteout' && o.split).length`)) === 2);
+    ex = await exportFiles('geteilt', ['student']);
+    const tx = await pdfText(fs.readFileSync(ex.student));
+    check('Geteilte Seite: oberer Teil auf Seite 1, unterer Teil nur auf Seite 2', tx[0].includes('Aufgabe 1') && !tx[0].includes('Aufgabe 2') && tx[1].includes('Aufgabe 2') && !tx[1].includes('Aufgabe 1') && !tx[1].includes('Klassenarbeit'), tx.slice(0, 2).join(' || '));
+  }
+
+  /* ================================================================ */
+  section('17. Fotografiertes Blatt aufbereiten');
+  {
+    await page.evaluate(() => window.__bw.newSheet(false));
+    await page.setInputFiles('#fileImg', path.join(ROOT, 'test', 'vorlagen', 'foto-blatt.jpg'));
+    const t = await page.waitForSelector('.tst button:has-text("Gerade ziehen")', { timeout: 10000 }).catch(() => null);
+    check('Foto eines Blatts wird erkannt und Aufbereiten angeboten', !!t);
+    if (t) await t.click(); else await page.click('#panel [data-act="scan"]');
+    await page.waitForSelector('#sc-prev canvas', { timeout: 10000 });
+    const q = await page.evaluate(() => [...document.querySelectorAll('.sch')].map(h => [parseFloat(h.style.left) / 100, parseFloat(h.style.top) / 100]));
+    const want = [[0.2625, 0.0692], [0.7438, 0.1154], [0.7875, 0.9385], [0.2188, 0.9]];
+    const dev = Math.max(...q.map((p, i) => Math.hypot(p[0] - want[i][0], p[1] - want[i][1])));
+    check('Blattecken automatisch gefunden (auf 1,5 % genau)', dev < 0.015, dev.toFixed(4));
+    await page.click('.dlg [data-mode="bw"]');
+    await page.click('.dlg [data-r="1"]');
+    await page.waitForFunction(() => !document.querySelector('.dlg') && !document.querySelector('.busy'), null, { timeout: 20000 });
+    const im = await sel();
+    check('Aufbereitet: Original bleibt erhalten, Format DIN A (√2)', im.orig && im.img !== im.orig && im.scan && im.scan.mode === 'bw' && Math.abs(im.h / im.w - Math.SQRT2) < 0.01, JSON.stringify({ w: im.w, h: im.h, s: im.scan }));
+    /* Pixel prüfen: Marke oben links (10–20 % der Seite) schwarz, Rand weiß, nur Schwarz und Weiß */
+    const px = await page.evaluate(async () => {
+      const S = window.__bw.S, o = S.objs.find(x => x.id === S.sel), im = new Image();
+      await new Promise(r => { im.onload = r; im.src = S.imgs[o.img].url; });
+      const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+      const at = (fx, fy) => g.getImageData(Math.round(fx * c.width), Math.round(fy * c.height), 1, 1).data[0];
+      const d = g.getImageData(0, 0, c.width, c.height).data; let mid = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 40 && d[i] < 215) mid++;
+      return { mark: at(0.15, 0.15), corner: [at(0.03, 0.03), at(0.97, 0.03), at(0.03, 0.97), at(0.04, 0.5)], mid: mid / (d.length / 4), mime: S.imgs[o.img].mime };
+    });
+    check('Entzerrt: Marke an der richtigen Stelle, Ränder und Schattenseite weiß', px.mark < 60 && px.corner.every(v => v > 230), JSON.stringify(px));
+    check('Schwarzweiß als PNG ohne Grautöne', px.mime === 'image/png' && px.mid < 0.01, JSON.stringify(px));
+    await page.click('#panel [data-act="imgfill"]');
+    const f = await sel();
+    check('„Seite füllen“ setzt das Blatt formatfüllend auf die Seite', f.x >= 0 && f.y >= 0 && f.x + f.w <= 595.3 && f.y + f.h <= 841.9 && (f.w > 595.3 - 40 || f.h > 841.9 - 40), JSON.stringify(f));
+    await page.fill('#p-caption', 'Foto: eigenes Blatt');
+    ex = await exportFiles('foto', ['student']);
+    const tx = await pdfText(fs.readFileSync(ex.student));
+    check('Foto-PDF: Quellenangabe enthalten', tx[0].includes('Foto: eigenes Blatt'), tx[0].slice(0, 120));
+    if (HAVE_PDFTOPPM) {
+      const r = inkRatio(ex.student, 1, { x: f.x + f.w * 0.11, y: f.y + f.h * 0.11, w: f.w * 0.08, h: f.h * 0.08 });
+      check('Foto-PDF: Marke sichtbar an der entzerrten Stelle', r > 0.9, r && r.toFixed(3));
+    }
+    /* Undo stellt das Original zurück; erneut bearbeiten beginnt mit den gespeicherten Ecken */
+    await page.click('#panel [data-act="imgorig"]');
+    await page.waitForFunction(() => { const S = window.__bw.S, o = S.objs.find(x => x.id === S.sel); return o && !o.orig && !o.scan; }, null, { timeout: 10000 });
+    const o2 = await sel();
+    check('„Original“ stellt das unbearbeitete Foto wieder her', Math.abs(o2.h / o2.w - 1300 / 1600) < 0.01, o2.w + 'x' + o2.h);
+    await page.click('#btnUndo');
+    const o3 = await sel();
+    check('Rückgängig bringt die aufbereitete Fassung zurück', o3 && o3.scan && o3.scan.mode === 'bw');
+    /* Speichern: nur gebrauchte Bilder */
+    const kept = await page.evaluate(() => Object.keys(window.__bw.usedImgs()).length);
+    check('Gespeichert werden nur Original und aktuelle Fassung', kept === 2, kept);
+    const rt = await page.evaluate(() => { const B = window.__bw, r = B.cleanState(JSON.parse(B.projectJSON())), o = r.objs.find(x => x.type === 'image'); return { cap: o.caption, orig: !!r.imgs[o.orig], scan: o.scan, n: Object.keys(r.imgs).length }; });
+    check('Projektdatei behält Quellenangabe, Original und Einstellungen', rt.cap === 'Foto: eigenes Blatt' && rt.orig && rt.scan && rt.scan.mode === 'bw' && rt.scan.q.length === 4 && rt.n === 2, JSON.stringify(rt));
+  }
+
+  section('18. Texterkennung (Scans und Fotos)');
+  {
+    const norm = t => t.replace(/\s+/g, ' ').trim();
+    /* Foto aus Abschnitt 17: Text im Bild erkennen */
+    await page.click('#panel [data-act="ocr-img"]');
+    await page.waitForFunction(() => window.__bw.S.objs.some(o => o.type === 'image' && o.ocr), null, { timeout: 90000 });
+    const fl = await page.evaluate(() => window.__bw.ocrLines(window.__bw.S.pages[0].id).map(l => l.str));
+    check('Foto: Text erkannt (Überschrift und 14 Aufgaben)', fl.some(t => /Arbeitsblatt Brüche/.test(t)) && fl.filter(t => /^Aufgabe \d+: Kürze den Bruch 12\/18/.test(t)).length >= 13, fl.slice(0, 4).join(' | '));
+    /* Eine Zeile auf dem Foto umschreiben: Abdeckung muss über dem Foto liegen */
+    const fz = await page.evaluate(() => window.__bw.ocrLines(window.__bw.S.pages[0].id).find(l => /^Aufgabe 1:/.test(l.str)));
+    await page.click('[data-tool="edittext"]');
+    await page.click(`.lnbox[data-k="${fz.k}"]`); await page.waitForTimeout(300);
+    await page.keyboard.press('Control+a'); await page.keyboard.type('Aufgabe 1: neu.');
+    await page.click('[data-tool="select"]'); await page.waitForTimeout(200);
+    await page.click(`[data-id="${(await page.evaluate(() => window.__bw.S.objs.find(o => o.type === 'image').id))}"]`);
+    ex = await exportFiles('foto-ocr', ['student']);
+    if (HAVE_PDFTOPPM) {
+      const r = inkRatio(ex.student, 1, { x: fz.x + fz.w * 0.55, y: fz.base - fz.fs * 0.7, w: fz.w * 0.4, h: fz.fs * 0.6 });
+      check('Foto: umgeschriebene Zeile – alter Text ist im PDF abgedeckt', r < 0.01, r && r.toFixed(3));
+    }
+    const ft = (await pdfText(fs.readFileSync(ex.student)))[0];
+    check('Foto-PDF: erkannter Text durchsuchbar, umgeschriebene Zeile ersetzt', /Aufgabe 7: Kürze den Bruch 12\/18/.test(ft) && ft.includes('Foto: eigenes Blatt') && ft.includes('Aufgabe 1: neu.') && !/Aufgabe 1: Kürze/.test(ft), ft.slice(0, 160));
+    await page.click('#panel [data-act="scan"]');
+    await page.waitForSelector('#sc-prev canvas', { timeout: 10000 });
+    await page.click('.dlg [data-mode="gray"]'); await page.click('.dlg [data-r="1"]');
+    await page.waitForFunction(() => !document.querySelector('.dlg') && !document.querySelector('.busy'), null, { timeout: 20000 });
+    check('Neu aufbereitetes Foto: alte Erkennung verfällt', !(await sel()).ocr);
+    await page.evaluate(() => window.__bw.ocrRelease(true));
+
+    /* Eingescanntes PDF */
+    await page.setInputFiles('#fileOpen', path.join(ROOT, 'test', 'vorlagen', 'scan-bruchrechnung.pdf'));
+    await page.waitForFunction(() => document.getElementById('docName').value === 'scan-bruchrechnung', null, { timeout: 15000 });
+    const offer = await page.waitForSelector('#panel [data-act="ocr"]', { timeout: 10000 }).catch(() => null);
+    check('Scan-Seite: „Text erkennen“ wird angeboten', !!offer);
+    await page.click('[data-tool="edittext"]');
+    const hint = await page.waitForSelector('.tst button:has-text("Text erkennen")', { timeout: 8000 }).catch(() => null);
+    check('„Text ändern“ auf einem Scan bietet die Erkennung an', !!hint);
+    const t0 = Date.now();
+    if (hint) await hint.click(); else await page.click('#panel [data-act="ocr"]');
+    await page.waitForFunction(() => window.__bw.S.pages[0].ocr, null, { timeout: 90000 });
+    const secs = (Date.now() - t0) / 1000;
+    const L = await page.evaluate(() => window.__bw.ocrLines(window.__bw.S.pages[0].id).map(l => ({ k: l.k, t: l.str, fs: l.fs, low: l.low.length })));
+    const want = ['Aufgabe 1: Kürze die folgenden Brüche so weit wie möglich.', 'Ein Bruch ist vollständig gekürzt, wenn Zähler und Nenner', 'Von den 28 Schülerinnen und Schülern fahren drei Viertel mit', 'Kinder fahren mit dem Bus? Schreibe deinen Rechenweg auf.', 'Aufgabe 3: Welcher Anteil des Kreises ist grau gefärbt?'];
+    check('Scan: Zeilen wortgenau erkannt (Umlaute, ß, Satzzeichen)', want.every(w => L.some(l => norm(l.t) === w)), L.map(l => l.t).join(' | '));
+    check('Scan: Lückenlinien sind kein Text', !L.some(l => /_{2,}|ER$/.test(l.t)) && L.some(l => norm(l.t) === 'Name: Datum:'), L.map(l => l.t).join(' | '));
+    const body = L.filter(l => /^(Ein|Von|dem|Kinder|keinen)/.test(l.t)).map(l => l.fs);
+    check('Scan: Schriftgröße geschätzt (12 pt ± 1,5)', body.length >= 4 && body.every(f => Math.abs(f - 12) < 1.5), body.map(f => f.toFixed(1)).join(','));
+    check('Scan: Erkennung dauert keine Ewigkeit (< 30 s)', secs < 30, secs.toFixed(1) + ' s');
+    await page.waitForSelector('.lnbox.ocr', { timeout: 5000 });
+    check('Erkannte Zeilen sind mit „Text ändern“ antippbar', (await page.locator('.lnbox.ocr').count()) === L.length, await page.locator('.lnbox.ocr').count());
+    /* Eine Zeile umschreiben */
+    const k2 = L.find(l => l.t.startsWith('Aufgabe 2')).k;
+    await page.click(`.lnbox[data-k="${k2}"]`); await page.waitForTimeout(300);
+    await page.keyboard.press('Control+a'); await page.keyboard.type('Aufgabe 2: Die Klasse 7a plant einen Ausflug ins Museum.');
+    await page.click('[data-tool="select"]'); await page.waitForTimeout(200);
+    /* Eine Zeile entfernen */
+    await page.click('[data-tool="erase"]');
+    const k3 = L.find(l => l.t.startsWith('Aufgabe 3')).k;
+    await page.waitForSelector(`.ebox.ocr[data-k="L${k3}"]`, { timeout: 8000 });
+    await page.click(`.ebox.ocr[data-k="L${k3}"]`);
+    await page.click('[data-tool="select"]');
+    ex = await exportFiles('scan-ocr', ['student']);
+    const tx = (await pdfText(fs.readFileSync(ex.student)))[0];
+    check('Scan-PDF: unsichtbare Textebene durchsuchbar', /Von den 28 Schülerinnen und Schülern fahren drei Viertel mit/.test(tx) && /Schreibe deinen Rechenweg auf\./.test(tx), tx.slice(0, 200));
+    check('Scan-PDF: umgeschriebene Zeile nur in neuer Fassung', tx.includes('7a plant einen Ausflug ins Museum') && !tx.includes('6b plant') && !tx.includes('in den Zoo'), tx.slice(0, 300));
+    check('Scan-PDF: entfernte Zeile auch unsichtbar nicht mehr enthalten', !tx.includes('Anteil des Kreises') && !tx.includes('grau gefärbt'), tx);
+    {
+      /* Wortbreiten im PDF passen zu den Wörtern im Scan (Markieren, Vorlesen mit Hervorhebung) */
+      const doc = await pdfjsNode.getDocument({ data: new Uint8Array(fs.readFileSync(ex.student)), isEvalSupported: false, verbosity: 0 }).promise;
+      const items = (await (await doc.getPage(1)).getTextContent()).items.filter(i => i.str.trim()); await doc.destroy();
+      const ol = await page.evaluate(() => window.__bw.ocrLines(window.__bw.S.pages[0].id).map(l => ({ t: l.str, w: l.w })));
+      const ratios = [];
+      for (const l of ol) { const it = items.find(i => i.str.replace(/\s+/g, ' ').trim() === l.t); if (it) ratios.push(it.width / l.w); }
+      ratios.sort((a, b) => a - b);
+      const med = ratios[ratios.length >> 1], worst = Math.max(...ratios.map(r => Math.abs(r - 1)));
+      check('Scan-PDF: unsichtbarer Text liegt genau über den Zeilen im Bild', ratios.length >= 6 && worst < 0.03, `${ratios.length} Zeilen, Median ${med && med.toFixed(3)}, max. Abweichung ${worst.toFixed(3)}`);
+    }
+    if (HAVE_PDFTOPPM) {
+      const pt = execFileSync('pdftotext', ['-layout', ex.student, '-']).toString();
+      check('Scan-PDF: Text auch für poppler lesbar (Wortabstände)', /Kinder fahren mit dem Bus\? Schreibe deinen Rechenweg auf\./.test(pt), pt.slice(0, 300));
+      /* Unsichtbar heißt unsichtbar: gleiche Pixel wie ohne Textebene */
+      const a = raster(ex.student, 1, 72);
+      await page.evaluate(() => { const B = window.__bw; B.S.pages[0].ocr0 = B.S.pages[0].ocr; delete B.S.pages[0].ocr; });
+      const ex2 = await exportFiles('scan-ohne-ocr', ['student']);
+      await page.evaluate(() => { const B = window.__bw; B.S.pages[0].ocr = B.S.pages[0].ocr0; delete B.S.pages[0].ocr0; });
+      const b2 = raster(ex2.student, 1, 72);
+      let diff = 0; for (let i = 0; i < a.data.length; i++) diff = Math.max(diff, Math.abs(a.data[i] - b2.data[i]));
+      check('Scan-PDF: Textebene verändert das Aussehen nicht', a.data.length === b2.data.length && diff <= 2, diff);
+    }
+    /* Speichern und Laden */
+    const rt = await page.evaluate(() => { const B = window.__bw, r = B.cleanState(JSON.parse(B.projectJSON())); return r.pages[0].ocr && r.pages[0].ocr.lines.length; });
+    check('Projektdatei behält die Erkennung', rt === L.length, rt);
+    /* Lesefreundliche Kopie aus dem Scan */
+    await page.evaluate(() => window.__bw.readableCopy());
+    await page.waitForFunction(() => /lesefreundlich/.test(document.getElementById('docName').value), null, { timeout: 30000 });
+    await page.waitForTimeout(500);
+    const rc = await page.evaluate(() => { const S = window.__bw.S; return { sid: S.pages[0].sid, n: S.pages.length, texts: S.objs.filter(o => o.type === 'text').map(o => ({ t: o.text, s: o.size })), imgs: S.objs.filter(o => o.type === 'image').map(o => ({ w: o.w, h: o.h })) }; });
+    const all = rc.texts.map(t => t.t).join('\n');
+    check('Lesefreundlich aus Scan: echte Seite statt Bild, Text übernommen', rc.sid === null && all.includes('Wie viele Kinder fahren mit dem Bus?') && all.includes('7a plant'), all.slice(0, 200));
+    check('Lesefreundlich: Absätze zusammengeführt, Lücken als Unterstriche', /Ein Bruch ist vollständig gekürzt, wenn Zähler und Nenner keinen/.test(all) && /Name: _{5,} Datum: _{5,}/.test(all), all.slice(0, 300));
+    check('Lesefreundlich: entfernte Zeile bleibt weg, keine Dopplung', !all.includes('Anteil des Kreises') && !all.includes('6b plant'), all);
+    check('Lesefreundlich: Abbildung (Kreis) als Bild übernommen', rc.imgs.length === 1 && Math.abs(rc.imgs[0].w - 145) < 15 && Math.abs(rc.imgs[0].h - 145) < 15, JSON.stringify(rc.imgs));
+    check('Lesefreundlich: Schrift mindestens 13 pt', rc.texts.every(t => t.s >= 13), rc.texts.map(t => t.s).join(','));
+    await page.evaluate(() => window.__bw.ocrRelease(true));
+    check('Texterkennung gibt den Speicher wieder frei', await page.evaluate(() => !window.__bw.OCR.worker));
+  }
+
   section('15. App-Pfad, Speicher-Ersatz, Gesten, schmale Geräte');
   const app = await ctx.newPage();
   app.on('pageerror', e => errs.push('App-Seitenfehler: ' + e.message));
@@ -764,6 +1194,8 @@ async function main() {
     await ctx2.close();
   }
   /* Einstellungen und Farben der Werkzeuge */
+  await page.evaluate(() => window.__bw.flushSave());
+  await page.reload(); await page.waitForSelector('html[data-ready="1"]');
   check('Nach Neustart erscheint der Startbildschirm', await page.isVisible('#home'));
   await page.evaluate(() => window.__bw.hideHome());
   await page.click('#btnHome');

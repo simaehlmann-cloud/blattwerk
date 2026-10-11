@@ -4,6 +4,51 @@
 
 ### Neu
 
+- **Texterkennung (offline)** für eingescannte Seiten und Fotos, mit deutschem
+  Sprachmodell, vollständig im Gerät. Danach:
+  - **Text ändern** und **Entfernen** funktionieren auch auf Scans und Fotos;
+    unsicher erkannte Wörter sind orange markiert.
+  - Exportierte PDFs bekommen eine **unsichtbare Textebene**: durchsuchbar,
+    kopierbar, vorlesbar – passgenau über dem Bild, ohne das Aussehen zu ändern.
+    Entfernter oder umgeschriebener Text fehlt auch dort.
+  - Die **lesefreundliche Kopie** macht aus einem Scan echten Text (Absätze
+    zusammengeführt, Lücken als Unterstriche); Abbildungen bleiben als Bild.
+  - App wird dadurch rund 9 MB größer (Download etwa 4,5 MB).
+- **Fotos von Arbeitsblättern aufbereiten**: Blattecken werden automatisch
+  gefunden (nachziehen möglich), das Foto wird gerade gezogen, zugeschnitten,
+  gedreht und wahlweise aufgehellt (Schatten weg), in Graustufen oder
+  Schwarzweiß umgewandelt; DIN-A-Format wird erkannt. „Seite füllen“ setzt es
+  formatfüllend aufs Blatt. Das Originalfoto bleibt erhalten.
+- **Quellenangabe** unter Bildern und Ausschnitten – beim Ausschneiden mit
+  Seitenzahl (gedruckte Seitenzahl des Buchs, wenn das PDF sie kennt).
+- **Entfernen**: Text oder Bild in einem geöffneten PDF antippen oder einen
+  Rahmen ziehen – es verschwindet. Abdeckfarbe kommt automatisch aus der Seite.
+- **Wirklich löschen statt verdecken**: Beim Export werden Schriftzeichen,
+  Bilder und Zeichnungen unter Abdeckungen (auch „Abdecken“ und „Text ändern“)
+  aus dem PDF entfernt; der Rest der Zeile bleibt pixelgenau stehen. Geprüft
+  mit PDFs aus LibreOffice, LaTeX, Browser-Druck, ReportLab und Matplotlib.
+  Wo das nicht sicher geht (Bild nur teilweise abgedeckt), wird nur diese
+  Seite als Bild ausgegeben – mit eingebrannter Abdeckung.
+- **Lösungen in Vorlagen**: Abdeckungen „nur für Schüler“ – im Lösungsblatt
+  bleibt das Original sichtbar. Aus einem Verlags-PDF mit Lösungen werden so
+  Arbeitsblatt und Lösungsblatt.
+- **Lücken als Felder erkennen**: Unterstriche, Punktlinien, Schreiblinien
+  (untereinander → ein mehrzeiliges Feld) und leere Kästchen werden zu
+  ausfüllbaren Feldern; Tabellen und Unterstreichungen bleiben unberührt.
+- **Vorhandene Formularfelder** eines PDFs werden beim Öffnen übernommen
+  (Text, Optionsfelder, Auswahllisten, Kästchen) – mit Lösung, Auswertung und
+  ohne doppelte Felder im Export.
+- **Neue Feldarten**: Einfachauswahl (runde Optionsfelder, „Als Einfachauswahl
+  verbinden“), Auswahlliste (z. B. richtig/falsch, <, =, >), Ziffernkästchen,
+  Freitext mit automatisch kleinerer Schrift.
+- **Korrigierte PDFs zurückgeben**: grüne Häkchen, rote Kreuze, auf Wunsch die
+  Lösung, Ergebnis und Kommentar oben, Antworten eingefroren; einzeln oder
+  gesammelt in einer Datei zum Drucken.
+- **Formular prüfen**: zu niedrige, überlappende, doppelt benannte Felder,
+  Sonderzeichen in Auswahllisten, zu lange QR-Codes; Hinweise auch im Exportdialog.
+- **Tab-Reihenfolge** zeilenweise von oben nach unten.
+- **Platz schaffen**: Seite an einer Stelle teilen – darunter freier Platz,
+  der Rest auf der nächsten Seite (auch bei PDF-Seiten).
 - **Startbildschirm**: Neues Blatt, PDF öffnen, Beispielblatt, Meine Blätter,
   „Weiterarbeiten“ und die zuletzt bearbeiteten Blätter; erreichbar über das
   Logo oben links und die Android-Zurücktaste
@@ -23,8 +68,12 @@
   y-Werte auf Knopfdruck aus einem Funktionsterm
 - **Funktionsgraphen** im Koordinatensystem (Schulschreibweise: 0,5x + 2, x², |x|,
   sqrt(x) …), Punkte „A(1|3)“, Graph wahlweise nur im Lösungsblatt
-- **Formen**: Strecke, Pfeil, Doppelpfeil, Rechteck, Ellipse, Winkel mit
-  Gradanzeige, Rechenkästchen; Endpunkte ziehbar
+- **Formen**: Strecke, Pfeil, Doppelpfeil, Rechteck, Ellipse, Kreis (mit
+  Mittelpunkt M und Radius r), Dreieck, Trapez, Parallelogramm, Raute, Drachen,
+  Winkel mit Gradanzeige, Rechenkästchen. Ecken ziehbar; Vierecke behalten
+  dabei ihre Eigenschaften. Seitenlängen und Winkel in der Leiste, Ecken
+  wahlweise mit A, B, C, D beschriftet
+- Neues oder geöffnetes Blatt beginnt immer mit dem Werkzeug „Auswählen“
 - **Einrasten** an Raster, Seitenrand, Seitenmitte und anderen Elementen (mit
   Hilfslinien; Alt-Taste schaltet es kurz ab)
 - **Mehrfachauswahl** (Umschalt+Klick, Rahmen ziehen, „Weitere auswählen“ am
@@ -58,6 +107,8 @@
 | Tabelle an der Ecke ziehen | Zeilenhöhe sprang | Formel vereinfacht |
 | Eigene Schriften im localStorage-Ersatz | Nach Neustart verloren | Werden mit Daten zurückgelesen |
 | Wertetabelle aus Funktion bei nur einer Zeile | Skriptfehler | Hinweis statt Absturz |
+| Ausfüllfelder ohne gespeicherte Ansicht (manche Apps) | Beim Einfrieren verschwanden die Antworten | Alle Felder werden vorher neu gezeichnet, Sonderzeichen mit Noto Sans |
+| pdf-lib nach dem Löschen von Objekten | poppler meldete „Invalid XRef entry“ | Lücken werden mit leeren Platzhaltern gefüllt |
 | `docs/.nojekyll` war leer | Beim Hochladen über github.com fiel die Datei weg, die Prüfung „Rechtstexte“ schlug im CI fehl | Datei hat jetzt einen Inhalt |
 | Lösung mit Alternativen auf dem Bildschirm | „2 \| m = 2“ roh angezeigt | „2 oder m = 2“ wie im Lösungsblatt |
 
@@ -69,12 +120,15 @@ PDF-Datei wird weiter gelesen. smoketest.js prüft beides.
 
 ### Prüfungen
 
-- smoketest.js: 147 Prüfungen (vorher 53), darunter Lesbarkeit des QR-Codes
+- smoketest.js: 193 Prüfungen, dazu echte Prüf-PDFs in `test/vorlagen/` (vorher 53), darunter Lesbarkeit des QR-Codes
   (jsQR), Farben und Lage im gerenderten PDF, Rundreise der Auswertung mit
   per pdf-lib ausgefüllten Schüler-PDFs, Formel-Einschleusung in der CSV
 - Gegenprobe mit absichtlich eingebauten Fehlern (Untermengen-Schriften,
   falsche Fassungsfilter, keine ausfüllbaren Zellen, Zahlenvergleich, CSV-Schutz,
-  QR-Inhalt, Umbruch der lesefreundlichen Kopie, Einrasten): jede wird erkannt
+  QR-Inhalt, Umbruch der lesefreundlichen Kopie, Einrasten, Zeichen-Löschung,
+  Lösungs-Abdeckung, Optionsfeld-Bewertung, Tabellen-Ausschluss,
+  Tab-Reihenfolge, Querverweis-Lücken, Feld-Widgets, Feldansichten,
+  Bildressourcen, Seitenteilung, eingebrannte Abdeckung): jede wird erkannt
 
 ## 1.0.0 – erste App-Fassung (Oktober 2026)
 

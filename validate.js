@@ -83,12 +83,17 @@ if (external.length) E(`Externe Adressen in index.html: ${external.join(', ')}`)
 const missing = [...refs].filter(r => !/^(https?:|mailto:|data:)/.test(r) && r !== 'cordova.js' && !exists(r));
 if (missing.length) E(`Fehlende Dateien: ${missing.join(', ')}`); else O(`Alle ${refs.size - 1} lokalen Verweise vorhanden`);
 for (const f of ['lib/pdfjs/pdf.worker.min.js', 'lib/pdfjs/cmaps/UniJIS-UCS2-H.bcmap', 'lib/pdfjs/standard_fonts/LiberationSans-Regular.ttf']) if (!exists(f)) E(`Fehlt: ${f}`);
+/* Texterkennung: wird zur Laufzeit nachgeladen, deshalb hier namentlich prüfen */
+const tess = ['tesseract.min.js', 'worker.min.js', 'tesseract-core-lstm.wasm.js', 'tesseract-core-simd-lstm.wasm.js', 'deu.traineddata.gz'].map(f => 'lib/tesseract/' + f);
+const tessMissing = tess.filter(f => !exists(f) || (!f.endsWith('.gz') && !js.includes(f.split('/').pop())));
+if (tessMissing.length) E(`Texterkennung unvollständig: ${tessMissing.join(', ')}`); else O('Texterkennung (Tesseract, Deutsch) vollständig');
+if (!read('lib/tesseract/tesseract.min.js').includes('7.0.0')) E('lib/tesseract ist nicht Version 7.0.0 (package.json)');
 const fontNames = new Set([...js.matchAll(/'(Noto[A-Za-z]+-[A-Za-z]+)'/g)].map(m => m[1]));
 const missingFonts = [...fontNames].filter(n => !exists(`fonts/${n}.ttf`));
 if (missingFonts.length) E(`Schriften fehlen: ${missingFonts.join(', ')}`); else O(`${fontNames.size} Schriftdateien vorhanden`);
 if (!read('lib/pdfjs/pdf.min.js').includes('3.11.174')) E('lib/pdfjs ist nicht Version 3.11.174 (package.json)');
 const pkg = JSON.parse(read('package.json'));
-if (pkg.devDependencies['pdfjs-dist'] !== '3.11.174' || pkg.devDependencies['pdf-lib'] !== '1.17.1') E('package.json pinnt andere Bibliotheksversionen als lib/');
+if (pkg.devDependencies['pdfjs-dist'] !== '3.11.174' || pkg.devDependencies['pdf-lib'] !== '1.17.1' || pkg.devDependencies['tesseract.js'] !== '7.0.0' || pkg.devDependencies['tesseract.js-core'] !== '6.1.2') E('package.json pinnt andere Bibliotheksversionen als lib/');
 
 /* ---------- 5. Sicherheitsrichtlinie ---------- */
 const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1];

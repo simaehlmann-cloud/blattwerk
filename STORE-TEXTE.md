@@ -17,11 +17,18 @@ wollen – ohne Konto, ohne Cloud, ohne Internet.
 
 ARBEITSBLÄTTER ANPASSEN
 • PDF öffnen und vorhandenen Text direkt ändern oder verschieben
+• Text und Bilder entfernen – sie werden wirklich aus dem PDF gelöscht
+• Lösungen im Verlagsmaterial nur für die Schülerfassung ausblenden
 • Eigene Aufgaben, Hinweise und Bilder einfügen, auch per Foto
+• Fotografierte Arbeitsblätter gerade ziehen, zuschneiden und aufhellen
+• Texterkennung für Scans und Fotos – offline: Text ändern, durchsuchbar und vorlesbar machen
+• Ausschnitte aus Schulbuch-PDFs mit Quellenangabe
 • Textstellen farbig markieren, Lösungen oder alte Aufgaben abdecken
 
 FÜR SCHÜLERINNEN UND SCHÜLER AUSFÜLLBAR
+• Lücken, Linien und Kästchen werden auf Knopfdruck zu ausfüllbaren Feldern
 • Textfelder setzen, in die Schüler im PDF tippen können
+• Einfachauswahl, Auswahllisten und Ziffernkästchen
 • Ankreuzkästchen für Multiple-Choice-Aufgaben
 • Das exportierte PDF funktioniert in Adobe Reader, der Dateien-App, in
   Browsern und auf dem iPad
@@ -46,6 +53,7 @@ EIN BLATT – DREI FASSUNGEN
 
 AUSWERTEN UND BEWERTEN
 • Ausgefüllte Schüler-PDFs einlesen: Übersicht je Aufgabe und je Schüler
+• Korrigierte PDFs mit Häkchen, Lösungen und Kommentar zurückgeben
 • Klassenarbeiten mit Punkten, Anforderungsbereichen, Notenschlüssel und
   Erwartungshorizont
 • Lesefreundliche Kopie mit größerer Schrift auf Knopfdruck

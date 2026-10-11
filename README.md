@@ -20,17 +20,26 @@ GitHub Actions bauen iOS und Android.
 
 Neu in 1.1:
 
+- Inhalte aus PDFs entfernen – beim Export wirklich gelöscht, nicht nur
+  verdeckt; Lösungen in Vorlagen nur für die Schülerfassung ausblenden
+- Lücken automatisch als Felder erkennen, vorhandene Formularfelder übernehmen
+- Einfachauswahl, Auswahllisten, Ziffernkästchen; korrigierte PDFs zurückgeben;
+  Formular prüfen; Platz schaffen durch Teilen einer Seite
 - Startbildschirm, Einstellungen (Farben, Schrift, Darstellung, Vorgaben)
   und „Über Blattwerk“ mit Erklärungen
 - Formatierung je Wort (fett, kursiv, unterstrichen, durchgestrichen, Farbe),
   Ausrichtung, Zeilenabstand, eigene Schriften (.ttf/.otf)
 - Formeln (Brüche, Wurzeln, Potenzen, Indizes, Strecken, Vektoren),
   Wertetabellen mit ausfüllbaren Zellen, Funktionsgraphen im Koordinatensystem
-- Formen: Strecke, Pfeil, Doppelpfeil, Rechteck, Ellipse, Winkel, Rechenkästchen
+- Formen: Strecke, Pfeil, Doppelpfeil, Rechteck, Ellipse, Kreis, Dreieck, Trapez,
+  Parallelogramm, Raute, Drachen, Winkel, Rechenkästchen
 - Einrasten an Raster, Seitenrändern und anderen Elementen; Mehrfachauswahl,
   Kopieren und Einfügen auch zwischen Seiten und Blättern
 - Seiten aus weiteren PDFs einfügen, duplizieren, drehen; Ausschnitt aus einem
-  PDF als Bild einfügen
+  PDF als Bild einfügen, mit Quellenangabe
+- Fotografierte Arbeitsblätter entzerren, zuschneiden, aufhellen (offline)
+- Texterkennung für Scans und Fotos (offline, Tesseract): Text ändern, durchsuchbare
+  und vorlesbare PDFs, lesefreundliche Kopie aus Scans
 - Ebenen Grundblatt / Hilfe / Lösung: ein Blatt, drei Exporte
   (Schülerfassung, mit Hilfen, Lösungsblatt); QR-Code zur Selbstkontrolle (offline)
 - Rücklauf: ausgefüllte Schüler-PDFs auswerten, Übersicht je Aufgabe und
@@ -42,7 +51,8 @@ Neu in 1.1:
 ## Dateien
 
     index.html            die gesamte App (Oberfläche und Logik)
-    lib/                  pdf.js 3.11.174, pdf-lib 1.17.1, fontkit 1.1.1, qrcode-generator 1.4.4 (unverändert)
+    lib/                  pdf.js 3.11.174, pdf-lib 1.17.1, fontkit 1.1.1, qrcode-generator 1.4.4,
+                          tesseract.js 7.0.0 mit Kern 6.1.2 und deutschem Modell (unverändert)
     fonts/                Noto-Schriften, mit make-fonts.sh reduziert
     manifest.json, sw.js  Browser-Fassung (PWA)
     config.xml            Cordova: Kennung, Version, Icons, iOS-Hinweistexte
@@ -53,6 +63,7 @@ Neu in 1.1:
 
     validate.js           statische Prüfungen (Versionen, Dateien, Store-Pflichtangaben)
     smoketest.js          Ablauftest im echten Browser, prüft jedes Export-PDF
+    test/vorlagen/        echte Prüf-PDFs aus LibreOffice, LaTeX, Browser u. a.
     make-icons.py         zeichnet das Icon in allen Größen
     make-ios-icons.py     iOS-Icons ohne Alphakanal und Startbild (läuft im CI)
     make-fonts.sh         holt und reduziert die Schriften

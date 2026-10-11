@@ -36,6 +36,20 @@ gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
 - Lösungen: Feld `solution` (Alternativen mit `|`), Kästchen `correct`,
   Tabelle `sol[][]`, Funktion `sol: true`, Elemente auf Ebene `sol`
 - `cleanState()` bereinigt jede Eingabe und hebt 1.0-Daten an
+- Formen mit Punkten (`isPointShape`): Strecke/Pfeil/Winkel/Kreis und Vielecke
+  (`POLY`: triangle, trapez, parallel, raute, drachen) mit x1/y1 … x4/y4;
+  `constrainPoly()` hält Trapez, Parallelogramm, Raute, Drachen beim Ziehen
+- Echtes Entfernen (`6c-redact`: `redactPage`): liest den Inhaltsstrom, löscht
+  Zeichen (Mitte unter Abdeckung → gleich breiter TJ-Abstand), Bilder/Pfade
+  ganz unter Abdeckung, bearbeitet Formular-XObjects als Kopie; sonst
+  `RedactUnsupported` → Seite als Bild mit eingebrannter Abdeckung.
+  Danach `pruneUnreachable` und `fillXrefGaps` (sonst poppler-Fehler)
+- Abdeckung `whiteout`: `erase` (aus „Entfernen“), `solShow` (nur Schüler-
+  und Hilfen-Fassung), `split` (Platz schaffen)
+- Felder: `ftype` text|choice|comb, `choices`, `comb`, `autoSize`;
+  Kästchen `group` = Einfachauswahl (Radio, Wert aus `fieldNames()['opt:'+id]`)
+- Beim Öffnen `importWidgets()`: Formularfelder werden Blattwerk-Felder,
+  Seite bekommt `dropWidgets` (Original-Widgets fallen im Export weg)
 - Einstellungen `P` in localStorage `bw:prefs` (nur Gerät), Vorgaben `PREF_DEF`,
   Prüfung je Schlüssel `PREF_OK`; Darstellung über `data-theme` am `<html>`
 - Startbildschirm `#home` liegt über dem Editor; das letzte Blatt ist dahinter
@@ -51,7 +65,7 @@ gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
 ## Prüfkette
 
     node validate.js       (16 Prüfgruppen)
-    node smoketest.js      (147 Prüfungen, Playwright + pdftoppm + qpdf + jsQR)
+    node smoketest.js      (193 Prüfungen, Playwright + pdftoppm + qpdf + jsQR)
 
 Chromium braucht eine UTF-8-Locale, sonst heißen Downloads mit Umlaut
 „download“ (smoketest.js setzt `LANG=C.UTF-8`).
@@ -63,5 +77,8 @@ Chromium braucht eine UTF-8-Locale, sonst heißen Downloads mit Umlaut
 - Test auf echten Geräten (iPad mit Stift, Android-Tablet), v. a. Formatieren
   einzelner Wörter mit der Bildschirmtastatur
 - Ausfüllbare Felder nutzen Helvetica: Schüler-Eingaben außerhalb von
-  WinAnsi (etwa π) zeigt der PDF-Betrachter selbst an, Blattwerk nicht
+  WinAnsi (etwa π) zeigt der PDF-Betrachter selbst an
+- Erledigt: Fotos entzerren/aufhellen (6d-scan.js: Otsu + größte helle Fläche → Ecken, Homographie, Hintergrund-Normalisierung; Original bleibt als `o.orig`, Einstellungen in `o.scan`), Quellenangabe `o.caption` (7 pt unter dem Bild, auch im Export)
+- Erledigt: Texterkennung (6e-ocr.js, tesseract.js 7.0.0, Kern 6.1.2 LSTM, `deu` aus tessdata_best_int, lazy geladen, Worker nach 60 s beendet). Ergebnis normiert auf den Träger: `p.ocr` (Scan-Seite) bzw. `o.ocr` (Bild, mit `img` – verfällt bei neuem Bild). Zeilen fließen über `linesOf()` in „Text ändern“/„Entfernen“; Export: unsichtbare Textebene (Tr 3, Tz auf Wortbreite), Wörter unter Abdeckungen fallen weg; `ocrReadable()` macht aus Scans echten Text + Abbildungsausschnitte. Abdeckungen auf Bildern liegen über dem Bild (`coverOnImage`)
+- Später: Handschrift-/Rechenbereich; Lücken auf Scans erkennen (Bildanalyse)
 - Browser-Artifact (Prototyp) entspricht nicht mehr der App
