@@ -1,0 +1,289 @@
+name: Build Blattwerk (Android)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ID: de.blattwerk.app
+      APP_NAME: Blattwerk
+      # Festgepinnt, damit derselbe Commit in einem Jahr dasselbe Ergebnis
+      # liefert. Zum Anheben nur diese Zeilen ändern und den Lauf beobachten –
+      # nicht mittendrin auf "latest" zurückstellen.
+      CORDOVA_CLI: '13.0.0'
+      CORDOVA_ANDROID: '15.0.0'
+      # Muss zu android-targetSdkVersion in der config.xml passen.
+      TARGET_SDK: '36'
+
+    # ---- Stand der Actions: August 2026 ----
+    # Alle Actions wurden von der Node-20- auf die Node-24-Laufzeit gehoben.
+    # GitHub hat die Runner am 16.06.2026 auf Node 24 umgestellt und entfernt
+    # Node 20 am 16.09.2026 ganz. Bis dahin liefen die alten Fassungen zwar
+    # noch, aber nur, weil der Runner sie zwangsweise auf Node 24 schob – ein
+    # Zustand, den GitHub selbst als "may not work as expected" bezeichnet.
+    # Zum Anheben immer erst pruefen, ob die neue Hauptversion mehr als die
+    # Laufzeit aendert (siehe setup-android unten).
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+
+      # node-version ist etwas anderes als die Laufzeit der Actions oben:
+      # hier laeuft die eigene Pruefkette. Node 20 hatte am 30.04.2026
+      # End-of-Life, deshalb 22 (LTS). Python 3 fuer validate.js bringt der
+      # Ubuntu-Laeufer mit.
+      - name: Node einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      # Bewusst ganz vorne: Ein fehlerhafter Commit faellt so nach wenigen
+      # Minuten durch, statt erst nach dem Herunterladen des Android-SDK.
+      - name: Werkzeuge für die Prüfungen
+        run: |
+          set -e
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils qpdf
+
+      - name: Prüfungen
+        run: |
+          set -e
+          node validate.js
+          node smoketest.js
+
+      - name: Java einrichten
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # v3 -> v4 ist der einzige Sprung, der mehr als die Laufzeit aendert:
+      # v4 stellt zugleich die Standard-cmdline-tools auf Version 20.0 um.
+      # Damit aendert sich das Werkzeug, mit dem der naechste Schritt die
+      # SDK-Pakete zieht. Der Schritt "Ziel-SDK bestaetigen" weiter unten
+      # faengt es ab, falls dabei nicht mehr API 36 herauskommt.
+      # packages ausdruecklich setzen: Der Standard der Action ist
+      # "tools platform-tools". Google liefert das veraltete Paket "tools"
+      # seit dem 15.09.2026 nicht mehr aus, sdkmanager bricht dann ab
+      # (android-actions/setup-android#537). Cordova braucht "tools" nicht;
+      # Plattform und Build-Tools zieht der naechste Schritt selbst.
+      - name: Android SDK bereitstellen
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - name: SDK-Pakete für API ${{ env.TARGET_SDK }} nachziehen
+        run: |
+          set -e
+          sdkmanager --install \
+            "platforms;android-${TARGET_SDK}" \
+            "build-tools;${TARGET_SDK}.0.0" \
+            "platform-tools"
+
+      - name: Cordova installieren
+        run: npm install -g "cordova@${CORDOVA_CLI}"
+
+      - name: Cordova-Projekt aufbauen
+        run: |
+          set -e
+          cordova create build "$APP_ID" "$APP_NAME"
+          cp config.xml build/config.xml
+          mkdir -p build/res/android
+          cp res/android/* build/res/android/
+
+          # Nur die tatsächlichen App-Dateien in www kopieren
+          rm -rf build/www/*
+          cp index.html manifest.json sw.js datenschutz.html impressum.html lizenzen.html build/www/
+          cp icon.png icon-192.png icon-maskable-512.png build/www/
+          cp -R lib fonts build/www/
+
+          # Kontrolle: was hier steht, landet im Store und ist danach
+          # unveränderlich.
+          grep -o 'id="[^"]*"' build/config.xml | head -1
+          grep -o '<name>[^<]*</name>' build/config.xml | head -1
+
+          cd build
+          cordova platform add "android@${CORDOVA_ANDROID}"
+          cordova clean android
+
+      # Die config.xml erklärt nur die Absicht. Was Gradle wirklich baut, steht
+      # erst im erzeugten Projekt – und genau daran scheitert der Play-Upload,
+      # wenn es nicht stimmt.
+      - name: Ziel-SDK im erzeugten Projekt bestätigen
+        working-directory: build
+        run: |
+          set -e
+          echo "--- Verwendete Versionen ---"
+          cordova -v
+          cordova platform ls || true
+
+          echo "--- Erzeugte Gradle-Konfiguration ---"
+          cat platforms/android/cdv-gradle-config.json 2>/dev/null || echo "(keine cdv-gradle-config.json)"
+
+          if grep -rqE "(\"SDK_VERSION\"[[:space:]]*:[[:space:]]*${TARGET_SDK}|targetSdkVersion[[:space:]]*=?[[:space:]]*\"?${TARGET_SDK})" \
+               platforms/android/cdv-gradle-config.json \
+               platforms/android/app/build.gradle 2>/dev/null; then
+            echo "Ziel-SDK ${TARGET_SDK} bestätigt."
+          else
+            echo "::error::Ziel-SDK ist nicht ${TARGET_SDK}. Play würde den Upload ablehnen."
+            exit 1
+          fi
+
+      - name: Debug-APK bauen (nur ohne hinterlegten Keystore sinnvoll)
+        working-directory: build
+        run: cordova build android --debug -- --packageType=apk
+
+      - name: Debug-APK hochladen
+        uses: actions/upload-artifact@v6
+        with:
+          name: Blattwerk-debug-apk
+          path: build/platforms/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      # ---- Signierter Release-Build für den Play Store ----
+      # Erwartet vier Repository-Secrets:
+      #   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+      #   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+      # Eigener Keystore fuer Blattwerk, nicht der von FairMix: Play verknuepft
+      # Schluessel und Paketkennung dauerhaft, ein kompromittierter Schluessel
+      # betraefe sonst beide Apps.
+      - name: Keystore entschlüsseln
+        id: keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "vorhanden=false" >> "$GITHUB_OUTPUT"
+            echo "Kein Keystore unter ANDROID_KEYSTORE_BASE64 – Release-Build wird übersprungen."
+            exit 0
+          fi
+
+          # Unsichtbare Zeichen entfernen, die beim Kopieren aus einem Editor
+          # mitkommen können: Byte-Order-Markierung, Leerzeichen, Zeilenumbrüche.
+          printf '%s' "$KEYSTORE_B64" \
+            | sed '1s/^\xEF\xBB\xBF//' \
+            | tr -d ' \t\r\n' \
+            | base64 -d > "$RUNNER_TEMP/blattwerk.keystore"
+
+          if [ ! -s "$RUNNER_TEMP/blattwerk.keystore" ]; then
+            echo "::error::Der Keystore ließ sich nicht dekodieren. Bitte ANDROID_KEYSTORE_BASE64 erneut einfügen."
+            exit 1
+          fi
+          echo "Keystore dekodiert: $(wc -c < "$RUNNER_TEMP/blattwerk.keystore") Bytes"
+          echo "vorhanden=true" >> "$GITHUB_OUTPUT"
+
+      - name: Signiert bauen (APK zum Testen und AAB für den Store)
+        if: steps.keystore.outputs.vorhanden == 'true'
+        working-directory: build
+        env:
+          STORE_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PW: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -e
+          # Ein fehlendes Passwort oder ein fehlender Alias erzeugt sonst eine
+          # Gradle-Fehlermeldung, die nicht erkennen laesst, woran es liegt.
+          for name in STORE_PW KEY_ALIAS KEY_PW; do
+            eval "wert=\$$name"
+            if [ -z "$wert" ]; then
+              echo "::error::Secret ANDROID_… für $name fehlt oder ist leer."
+              exit 1
+            fi
+          done
+
+          cat > build.json <<JSON
+          {
+            "android": {
+              "release": {
+                "keystore": "$RUNNER_TEMP/blattwerk.keystore",
+                "storePassword": "$STORE_PW",
+                "alias": "$KEY_ALIAS",
+                "password": "$KEY_PW",
+                "keystoreType": "pkcs12"
+              }
+            }
+          }
+          JSON
+          # APK: zum Aufspielen aufs eigene Gerät. Immer derselbe Schlüssel,
+          # deshalb lässt es sich über eine vorhandene Installation legen.
+          cordova build android --release -- --packageType=apk
+          # AAB: das Format, das die Play Console verlangt.
+          cordova build android --release -- --packageType=bundle
+          rm -f build.json
+
+      # Kontrolle der Signatur. Cordova meldet auch dann Erfolg, wenn es
+      # einen anderen als den erwarteten Schluessel verwendet hat – sichtbar
+      # wird das erst am Fingerabdruck. Der erste Upload in die Play Console
+      # legt den Upload-Schluessel fuer die Kennung dauerhaft fest, deshalb
+      # wird hier vorher geprueft.
+      # keytool auf dem eigenen Rechner hilft nicht: es kennt nur das alte
+      # JAR-Verfahren (v1), Android signiert mit v2/v3.
+      - name: Signatur und Kennung bestätigen
+        if: steps.keystore.outputs.vorhanden == 'true'
+        working-directory: build
+        env:
+          STORE_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          set -e
+          APKSIGNER="$ANDROID_HOME/build-tools/${TARGET_SDK}.0.0/apksigner"
+          AAPT2="$ANDROID_HOME/build-tools/${TARGET_SDK}.0.0/aapt2"
+          APK=$(ls platforms/android/app/build/outputs/apk/release/*.apk | head -1)
+
+          echo "--- Kennung im fertigen APK ---"
+          KENNUNG=$("$AAPT2" dump packagename "$APK")
+          echo "$KENNUNG"
+          if [ "$KENNUNG" != "$APP_ID" ]; then
+            echo "::error::Kennung ist $KENNUNG, erwartet war $APP_ID."
+            exit 1
+          fi
+
+          echo "--- Fingerabdruck des verwendeten Schlüssels ---"
+          "$APKSIGNER" verify --print-certs "$APK" | grep -i "SHA-256 digest\|DN:"
+
+          # Gegenprobe: derselbe Wert direkt aus dem Keystore. Beide Zeilen
+          # muessen uebereinstimmen; abweichende Schreibweise (Doppelpunkte,
+          # Gross-/Kleinschreibung) wird vorher angeglichen.
+          # awk '{print $NF}' nimmt das letzte Feld der Zeile. Das ist in
+          # beiden Ausgaben der Fingerabdruck selbst. Ein Abschneiden per
+          # sed am Doppelpunkt waere falsch: keytool trennt die Bytes des
+          # Fingerabdrucks ebenfalls mit Doppelpunkten.
+          AUS_APK=$("$APKSIGNER" verify --print-certs "$APK" \
+            | grep -i -m1 "certificate SHA-256 digest" \
+            | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
+          AUS_KEYSTORE=$(keytool -list -v \
+            -keystore "$RUNNER_TEMP/blattwerk.keystore" \
+            -alias "$KEY_ALIAS" -storepass "$STORE_PW" \
+            | grep -i -m1 "SHA256:" \
+            | awk '{print $NF}' | tr -d ':' | tr 'A-F' 'a-f')
+
+          echo "APK:      $AUS_APK"
+          echo "Keystore: $AUS_KEYSTORE"
+          if [ -z "$AUS_APK" ] || [ "$AUS_APK" != "$AUS_KEYSTORE" ]; then
+            echo "::error::Das APK wurde nicht mit dem erwarteten Schlüssel signiert."
+            exit 1
+          fi
+          echo "Signatur bestätigt: Das APK trägt den Schlüssel aus ANDROID_KEYSTORE_BASE64."
+
+      - name: Signiertes APK hochladen
+        if: steps.keystore.outputs.vorhanden == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: Blattwerk-release-apk
+          path: build/platforms/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: AAB hochladen
+        if: steps.keystore.outputs.vorhanden == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: Blattwerk-release-aab
+          path: build/platforms/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error

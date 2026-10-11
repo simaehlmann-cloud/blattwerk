@@ -1,0 +1,351 @@
+name: Build Blattwerk (iOS)
+
+# Aufbau wie bei FairMix: eigener Workflow, weil der iOS-Build einen
+# macOS-Laeufer, andere Werkzeuge und andere Geheimnisse braucht.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # Die Pruefkette laeuft auf Linux. macOS-Laeufer werden je Minute zehnfach
+  # abgerechnet – ein Tippfehler soll nicht auf dem teuren Laeufer auffallen.
+  # Die Pruefkette laeuft auf Linux. macOS-Laeufer werden je Minute zehnfach
+  # abgerechnet – ein Fehler soll nicht erst auf dem teuren Laeufer auffallen.
+  pruefungen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+
+      - name: Node einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Werkzeuge installieren
+        run: |
+          set -e
+          npm ci
+          npx playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends poppler-utils qpdf
+
+      - name: Prüfungen
+        run: |
+          set -e
+          node validate.js
+          node smoketest.js
+
+  build:
+    needs: pruefungen
+    # Festgepinnt, nicht macos-latest: GitHub schiebt "latest" ohne Vorwarnung
+    # auf eine neue Xcode-Fassung weiter. Ein Build, der gestern lief, faellt
+    # dann heute durch, ohne dass sich am Repo etwas geaendert hat.
+    runs-on: macos-26
+
+    env:
+      APP_ID: de.blattwerk.app
+      APP_NAME: Blattwerk
+      CORDOVA_CLI: '13.0.0'
+      CORDOVA_IOS: '8.1.1'
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v5
+
+      - name: Node einrichten
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      # Fest gewaehlte Xcode-Fassung. Apple nimmt Uploads nur an, wenn sie
+      # mit einem hinreichend neuen SDK gebaut wurden; welches das ist,
+      # verschiebt sich jaehrlich. Diese Zeile ist der Ort, an dem das
+      # nachgezogen wird.
+      - name: Xcode auswählen
+        run: |
+          set -e
+          ls /Applications | grep -i '^Xcode' || true
+          APP=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          [ -n "$APP" ] || { echo "Kein Xcode 26 auf diesem Laeufer gefunden."; exit 1; }
+          sudo xcode-select -switch "$APP"
+          xcodebuild -version
+
+      - name: Icons und Startbild erzeugen
+        run: |
+          set -e
+          python3 -m pip install --quiet --break-system-packages Pillow || pip3 install --quiet Pillow
+          python3 make-ios-icons.py
+
+      - name: Cordova installieren
+        run: npm install -g "cordova@${CORDOVA_CLI}"
+
+      - name: Cordova-Projekt aufbauen
+        run: |
+          set -e
+          cordova create build "$APP_ID" "$APP_NAME"
+          cp config.xml build/config.xml
+          mkdir -p build/res/ios build/res/android
+          cp res/ios/* build/res/ios/
+          cp res/android/* build/res/android/
+
+          # Nur die tatsächlichen App-Dateien in www kopieren (keine Tests,
+          # keine Skripte). Bibliotheken und Schriften liegen im Repo, damit
+          # die App ohne Netz laeuft und jeder Build dieselben Dateien enthaelt.
+          rm -rf build/www/*
+          cp index.html manifest.json sw.js datenschutz.html impressum.html lizenzen.html build/www/
+          cp icon.png icon-192.png icon-maskable-512.png build/www/
+          cp -R lib fonts build/www/
+
+          # Kontrolle: was hier steht, landet im Store.
+          grep -o 'id="[^"]*"' build/config.xml | head -1
+          grep -o '<name>[^<]*</name>' build/config.xml | head -1
+
+          cd build
+          cordova platform add "ios@${CORDOVA_IOS}"
+
+      # Die config.xml erklaert nur die Absicht. Was Xcode wirklich baut, steht
+      # in der erzeugten Info.plist – und genau daran scheitert der Upload,
+      # wenn es nicht stimmt. Alle drei Punkte sind Rueckweisungsgruende, die
+      # erst nach der Verarbeitung in App Store Connect sichtbar wuerden.
+      - name: Erzeugtes Projekt bestätigen
+        working-directory: build
+        run: |
+          set -e
+          # cordova-ios 8 benennt das Xcode-Projekt immer "App", egal wie die
+          # App heisst (Breaking Change aus 8.0.0-beta.1, "Consistent app
+          # template/Xcode project name"). Frueher stand hier der App-Name.
+          # Der Fund wird trotzdem gesucht statt geraten: faellt Apache das
+          # noch einmal um, bricht der Build mit einer klaren Meldung ab
+          # statt mit "Datei nicht gefunden".
+          PLIST=$(find platforms/ios -maxdepth 3 -name '*-Info.plist' | head -1)
+          [ -n "$PLIST" ] || { echo "::error::Keine Info.plist im erzeugten Projekt gefunden."; exit 1; }
+          echo "--- Info.plist: $PLIST ---"
+
+          holen() {
+            /usr/libexec/PlistBuddy -c "Print :$1" "$PLIST" 2>/dev/null || echo "FEHLT"
+          }
+
+          # cordova-ios 8 traegt in die Info.plist nur die Xcode-Variable
+          # $(PRODUCT_BUNDLE_IDENTIFIER) ein; der gesetzte Wert steht in der
+          # Projektdatei. Deshalb erst die Plist lesen und, wenn dort eine
+          # Variable oder nichts steht, in project.pbxproj nachsehen.
+          BUNDLE=$(holen CFBundleIdentifier)
+          case "$BUNDLE" in
+            FEHLT|*'$('*)
+              PBX=$(find platforms/ios -name project.pbxproj | head -1)
+              if [ -n "$PBX" ]; then
+                BUNDLE=$(grep -m1 -o 'PRODUCT_BUNDLE_IDENTIFIER = [^;]*;' "$PBX" \
+                         | sed 's/.*= *//; s/;$//; s/^"//; s/"$//')
+                echo "Bundle-ID aus project.pbxproj gelesen."
+              fi
+              [ -n "$BUNDLE" ] || BUNDLE=FEHLT
+              ;;
+          esac
+          KRYPTO=$(holen ITSAppUsesNonExemptEncryption)
+          FOTOS=$(holen NSPhotoLibraryAddUsageDescription)
+          KAMERA=$(holen NSCameraUsageDescription)
+          MEDIATHEK=$(holen NSPhotoLibraryUsageDescription)
+
+          echo "Bundle-ID:        $BUNDLE"
+          echo "Export-Erklärung: $KRYPTO"
+          echo "Foto-Hinweis:     $FOTOS"
+          echo "Kamera-Hinweis:   $KAMERA"
+          echo "Mediathek:        $MEDIATHEK"
+
+          FEHLER=0
+          [ "$BUNDLE" = "$APP_ID" ] || { echo "::error::Bundle-ID ist '$BUNDLE', erwartet '$APP_ID'."; FEHLER=1; }
+          [ "$KRYPTO" = "false" ]  || { echo "::error::ITSAppUsesNonExemptEncryption fehlt – jeder Upload fragt sonst nach."; FEHLER=1; }
+          [ "$FOTOS" != "FEHLT" ]  || { echo "::error::NSPhotoLibraryAddUsageDescription fehlt – 'Bild sichern' beendet die App."; FEHLER=1; }
+          [ "$KAMERA" != "FEHLT" ] || { echo "::error::NSCameraUsageDescription fehlt – 'Foto aufnehmen' beendet die App."; FEHLER=1; }
+          # Cordovas Platzhaltertext ("This app requires ...") weist Apple automatisch ab.
+          case "$MEDIATHEK$KAMERA$FOTOS" in
+            *"requires photo library access"*|*"This app requires"*|FEHLT*) echo "::error::Platzhaltertext oder fehlender Mediathek-Hinweis in der Info.plist."; FEHLER=1 ;;
+          esac
+
+          # cordova-ios 8 legt selbst ein PrivacyInfo.xcprivacy an – aber mit
+          # leerem NSPrivacyAccessedAPITypes. Unseres nennt den Grund CA92.1
+          # fuer UserDefaults. Es muss das mitgelieferte ersetzen, nicht
+          # daneben liegen: zwei Manifeste im Projekt sind mehrdeutig, und
+          # Xcode bindet nur das aus der Projektdatei ein.
+          MANIFESTE=$(find platforms/ios -name PrivacyInfo.xcprivacy | wc -l | tr -d ' ')
+          echo "Privacy-Manifeste im Projekt: $MANIFESTE"
+
+          if [ "$MANIFESTE" -eq 0 ]; then
+            echo "::error::Kein PrivacyInfo.xcprivacy im Projekt. App Store Connect weist den Upload zurück."
+            FEHLER=1
+          else
+            for M in $(find platforms/ios -name PrivacyInfo.xcprivacy); do
+              if ! grep -q 'CA92.1' "$M"; then
+                echo "Ersetze mitgeliefertes Manifest: $M"
+                cp ../res/ios/PrivacyInfo.xcprivacy "$M"
+              fi
+            done
+            for M in $(find platforms/ios -name PrivacyInfo.xcprivacy); do
+              grep -q 'CA92.1' "$M" || { echo "::error::$M ohne Zugriffsgrund."; FEHLER=1; }
+            done
+          fi
+
+          exit $FEHLER
+
+      # Ohne Zertifikat laeuft trotzdem ein Build – er beweist, dass der
+      # Quelltext uebersetzt. Nur hochladen laesst er sich nicht.
+      - name: Unsigniert bauen (Kompilierbarkeit nachweisen)
+        working-directory: build
+        run: cordova build ios --debug --emulator
+
+      # ---- Signierter Build für den App Store ----
+      # Erwartet fünf Repository-Secrets:
+      #   IOS_CERTIFICATE_P12_BASE64   Distribution-Zertifikat samt privatem
+      #                                Schlüssel, aus der Schlüsselbundverwaltung
+      #                                als .p12 exportiert
+      #   IOS_CERTIFICATE_PASSWORD     Passwort dieses .p12
+      #   IOS_PROVISIONING_PROFILE     .mobileprovision (App Store), base64
+      #   IOS_TEAM_ID                  zehnstellige Team-ID
+      #   IOS_SIGNING_IDENTITY          z. B. "Apple Distribution: Simon Mählmann (TEAMID)"
+      - name: Signierschlüssel einrichten
+        id: signieren
+        env:
+          ZERT_B64: ${{ secrets.IOS_CERTIFICATE_P12_BASE64 }}
+          ZERT_PW: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFIL_B64: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+        run: |
+          set -e
+          if [ -z "$ZERT_B64" ] || [ -z "$PROFIL_B64" ]; then
+            echo "vorhanden=false" >> "$GITHUB_OUTPUT"
+            echo "Kein Zertifikat hinterlegt – signierter Build wird übersprungen."
+            exit 0
+          fi
+
+          # Unsichtbare Zeichen entfernen, die beim Kopieren aus einem Editor
+          # mitkommen können: Byte-Order-Markierung, Leerzeichen, Umbrüche.
+          saeubern() {
+            printf '%s' "$1" | sed '1s/^\xEF\xBB\xBF//' | tr -d ' \t\r\n' | base64 -d
+          }
+
+          ZERT="$RUNNER_TEMP/dist.p12"
+          PROFIL="$RUNNER_TEMP/profil.mobileprovision"
+          saeubern "$ZERT_B64"   > "$ZERT"
+          saeubern "$PROFIL_B64" > "$PROFIL"
+
+          [ -s "$ZERT" ]   || { echo "::error::Das Zertifikat ließ sich nicht dekodieren."; exit 1; }
+          [ -s "$PROFIL" ] || { echo "::error::Das Profil ließ sich nicht dekodieren."; exit 1; }
+
+          # Eigener Schlüsselbund. Der Standard-Schlüsselbund des Läufers ist
+          # gesperrt; codesign käme sonst nicht an den privaten Schlüssel.
+          # Das Passwort ist eine Wegwerfgröße – der Läufer wird nach dem Lauf
+          # verworfen.
+          BUND="$RUNNER_TEMP/signieren.keychain-db"
+          BUND_PW=$(uuidgen)
+          security create-keychain -p "$BUND_PW" "$BUND"
+          security set-keychain-settings -lut 21600 "$BUND"
+          security unlock-keychain -p "$BUND_PW" "$BUND"
+          security import "$ZERT" -P "$ZERT_PW" -A -t cert -f pkcs12 -k "$BUND"
+          # Ohne diese Zeile fragt codesign in einem Dialog nach Erlaubnis –
+          # auf einem Läufer ohne Bildschirm läuft der Build dann in den
+          # Zeitablauf.
+          security set-key-partition-list -S apple-tool:,apple: -k "$BUND_PW" "$BUND" > /dev/null
+          security list-keychain -d user -s "$BUND" login.keychain-db
+
+          # Profil dorthin legen, wo Xcode es sucht.
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' \
+                   /dev/stdin <<< "$(security cms -D -i "$PROFIL")")
+          cp "$PROFIL" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          echo "Profil installiert: $UUID"
+
+          rm -f "$ZERT" "$PROFIL"
+          echo "profil_uuid=$UUID" >> "$GITHUB_OUTPUT"
+          echo "vorhanden=true" >> "$GITHUB_OUTPUT"
+
+      - name: Signiert bauen (IPA für den App Store)
+        if: steps.signieren.outputs.vorhanden == 'true'
+        working-directory: build
+        env:
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          IDENTITAET: ${{ secrets.IOS_SIGNING_IDENTITY }}
+          PROFIL_UUID: ${{ steps.signieren.outputs.profil_uuid }}
+        run: |
+          set -e
+          cat > build.json <<JSON
+          {
+            "ios": {
+              "release": {
+                "codeSignIdentity": "$IDENTITAET",
+                "developmentTeam": "$TEAM_ID",
+                "provisioningProfile": "$PROFIL_UUID",
+                "packageType": "app-store",
+                "automaticProvisioning": false
+              }
+            }
+          }
+          JSON
+          cordova build ios --release --device
+          rm -f build.json
+
+      - name: IPA hochladen
+        if: steps.signieren.outputs.vorhanden == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: Blattwerk-ios-ipa
+          path: build/platforms/ios/build/**/*.ipa
+          if-no-files-found: error
+
+      # ---- Upload nach App Store Connect ----
+      # Braucht drei weitere Secrets aus App Store Connect -> Benutzer und
+      # Zugriff -> Integrationen -> App Store Connect API:
+      #   ASC_KEY_ID      zehnstellige Schlüssel-ID
+      #   ASC_ISSUER_ID   Aussteller-ID (einmal je Konto)
+      #   ASC_KEY_P8      Inhalt der .p8-Datei, vollständig samt BEGIN/END
+      #
+      # Die .p8 laesst sich genau einmal herunterladen. Geht sie verloren,
+      # muss ein neuer Schluessel angelegt werden.
+      #
+      # Bewusst nur bei manuellem Start: Ein Upload je Push wuerde die
+      # Build-Nummern verbrennen, und jede hochgeladene Nummer ist dauerhaft
+      # belegt – auch wenn der Build nie eingereicht wird.
+      - name: In App Store Connect hochladen
+        if: steps.signieren.outputs.vorhanden == 'true' && github.event_name == 'workflow_dispatch'
+        working-directory: build
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -e
+          if [ -z "$ASC_KEY_ID" ] || [ -z "$ASC_ISSUER_ID" ] || [ -z "$ASC_KEY_P8" ]; then
+            echo "Keine App-Store-Connect-Schlüssel hinterlegt – Upload übersprungen."
+            echo "Die IPA liegt trotzdem als Artefakt bereit."
+            exit 0
+          fi
+
+          # altool sucht den Schlüssel genau an diesem Pfad, unter genau
+          # diesem Namen. Abweichungen führen zu "API key not found".
+          mkdir -p "$HOME/private_keys"
+          printf '%s\n' "$ASC_KEY_P8" > "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+
+          IPA=$(find platforms/ios/build -name '*.ipa' | head -1)
+          [ -n "$IPA" ] || { echo "::error::Keine IPA gefunden."; exit 1; }
+          echo "Lade hoch: $IPA"
+
+          # Erst prüfen, dann senden. Der Prüflauf findet fehlende
+          # Info.plist-Schlüssel und Icon-Probleme, bevor eine Build-Nummer
+          # verbraucht ist.
+          xcrun altool --validate-app -f "$IPA" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+
+          xcrun altool --upload-app -f "$IPA" -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+
+          rm -f "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "Hochgeladen. Die Verarbeitung in App Store Connect dauert 5–30 Minuten."
+
+      # Der Schlüsselbund liegt in RUNNER_TEMP und verschwindet mit dem
+      # Läufer. Die Zeile ist trotzdem da, damit ein späterer Schritt in
+      # diesem Job nicht versehentlich mit entsperrtem Bund weiterarbeitet.
+      - name: Schlüsselbund entfernen
+        if: always()
+        run: security delete-keychain "$RUNNER_TEMP/signieren.keychain-db" || true
