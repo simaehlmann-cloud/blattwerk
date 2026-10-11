@@ -72,10 +72,14 @@ function raster(file, pageNo, res = 72, gray = true) {
   execFileSync('pdftoppm', [...(gray ? ['-gray'] : []), '-r', String(res), '-f', String(pageNo), '-l', String(pageNo), file, base]);
   const f = fs.readdirSync(OUT).filter(n => n.startsWith('probe') && /\.p[gp]m$/.test(n)).map(n => path.join(OUT, n))[0];
   const b = fs.readFileSync(f); fs.unlinkSync(f);
+  return Object.assign(readPnm(b), { k: res / 72 });
+}
+/* PGM/PPM (P5/P6, 8 Bit) lesen – ohne Python oder Bildbibliotheken */
+function readPnm(b) {
   let off = 0; const tok = [];
   while (tok.length < 4) { while (/\s/.test(String.fromCharCode(b[off]))) off++; let s = ''; while (!/\s/.test(String.fromCharCode(b[off]))) s += String.fromCharCode(b[off++]); tok.push(s); }
   off++;
-  return { w: +tok[1], h: +tok[2], ch: tok[0] === 'P6' ? 3 : 1, data: b.subarray(off), k: res / 72 };
+  return { w: +tok[1], h: +tok[2], ch: tok[0] === 'P6' ? 3 : 1, data: b.subarray(off) };
 }
 function pixels(file, pageNo, box, test, gray) {
   if (!HAVE_PDFTOPPM) return null;
@@ -854,10 +858,16 @@ async function main() {
       });
       const rf = path.join(OUT, 'teilbild.pdf'); fs.writeFileSync(rf, Buffer.from(res[0], 'base64'));
       const dir = path.join(OUT, 'teilbild'); fs.mkdirSync(dir, { recursive: true });
-      execFileSync('pdfimages', ['-png', rf, path.join(dir, 'b')]);
-      const img = fs.readdirSync(dir).map(f => path.join(dir, f))[0];
+      execFileSync('pdfimages', [rf, path.join(dir, 'b')]);
+      const img = fs.readdirSync(dir).filter(f => /\.p[gp]m$/.test(f)).map(f => path.join(dir, f))[0];
       /* Das ausgegebene Seitenbild: Bereich unter der Abdeckung muss weiß sein */
-      const py = execFileSync('python3', ['-c', `from PIL import Image\nim=Image.open(${JSON.stringify(img)}).convert('L');w,h=im.size;k=w/595\nbox=(int(62*k),int(254*k),int(103*k),int(295*k));px=list(im.crop(box).getdata());print(sum(1 for v in px if v<200)/len(px))`]).toString().trim();
+      const im = readPnm(fs.readFileSync(img)), k = im.w / 595;
+      let dark = 0, n = 0;
+      for (let y = Math.floor(254 * k); y < Math.floor(295 * k); y++) for (let x = Math.floor(62 * k); x < Math.floor(103 * k); x++) {
+        const i = (y * im.w + x) * im.ch, v = im.ch === 3 ? im.data[i] * 0.299 + im.data[i + 1] * 0.587 + im.data[i + 2] * 0.114 : im.data[i];
+        n++; if (v < 200) dark++;
+      }
+      const py = (dark / n).toFixed(4);
       check('Bild nur teilweise abgedeckt: Seite als Bild, darunter wirklich weiß', res[1].length === 1 && +py < 0.01 && res[2].some(w => /als Bild/.test(w)), res[1] + ' / ' + py);
     }
     /* Lücken erkennen */
