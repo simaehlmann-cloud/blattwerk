@@ -261,7 +261,9 @@ def erwartet():
     app = {"datenschutz.html": DATENSCHUTZ, "impressum.html": IMPRESSUM, "lizenzen.html": lizenzen()}
     alles = dict(app)
     alles[os.path.join("docs", "index.html")] = UEBERSICHT
-    alles[os.path.join("docs", ".nojekyll")] = ""
+    # Nicht leer: Beim Hochladen über github.com fallen leere Dateien weg.
+    # GitHub Pages wertet nur aus, dass die Datei existiert.
+    alles[os.path.join("docs", ".nojekyll")] = "GitHub Pages: Seiten ohne Jekyll ausliefern.\n"
     for name, text in app.items():
         alles[os.path.join("docs", "blattwerk", name)] = fuer_web(text)
     return alles
