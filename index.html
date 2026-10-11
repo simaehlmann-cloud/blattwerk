@@ -40,13 +40,20 @@
   --f-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root{
+/* Darstellung: wie das System, oder in den Einstellungen fest hell/dunkel */
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --desk:#13161d; --grid:rgba(125,149,255,.07); --panel:#1b1f28; --raise:#232836;
   --ink:#e5e8ef; --muted:#9aa3b6; --line:#323949; --accent:#8ea2ff; --on-accent:#0c1022;
   --accent-soft:rgba(142,162,255,.14); --danger:#ff8a80; --ok:#7ed58a;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --desk:#13161d; --grid:rgba(125,149,255,.07); --panel:#1b1f28; --raise:#232836;
+  --ink:#e5e8ef; --muted:#9aa3b6; --line:#323949; --accent:#8ea2ff; --on-accent:#0c1022;
+  --accent-soft:rgba(142,162,255,.14); --danger:#ff8a80; --ok:#7ed58a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.45); color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%;margin:0}
 body{background:var(--desk);color:var(--ink);font-family:var(--f-ui);font-size:14px;overflow:hidden;
   -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
@@ -63,6 +70,50 @@ svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stro
   background:var(--panel);border-bottom:1px solid var(--line);min-width:0}
 .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px;letter-spacing:-.01em;flex:none}
 .brand .logo{width:28px;height:28px}
+button.brand{border:0;background:transparent;padding:4px 6px;border-radius:8px;color:inherit}
+button.brand:hover{background:var(--accent-soft)}
+
+/* Startbildschirm, Einstellungen, Hilfe */
+.home{position:fixed;inset:0;z-index:50;overflow-y:auto;-webkit-overflow-scrolling:touch;background-color:var(--desk);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:18.9px 18.9px;
+  padding:calc(24px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) calc(16px + env(safe-area-inset-left,0px))}
+.home-in{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.home-head{display:flex;align-items:center;gap:14px}
+.home-head svg{width:56px;height:56px;flex:none}
+.home-head h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.02em}
+.home-head p{margin:2px 0 0;color:var(--muted)}
+.home-cont{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px 16px;border-radius:14px;border:1.5px solid var(--accent);background:var(--raise);box-shadow:var(--shadow)}
+.home-cont b{display:block;font-size:16px}.home-cont span{color:var(--muted);font-size:13px}
+.home-cont .go{margin-left:auto;font-weight:700;color:var(--accent);white-space:nowrap}
+.home-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.home-tile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:16px;border-radius:14px;border:1px solid var(--line);background:var(--raise);box-shadow:var(--shadow);min-height:118px}
+.home-tile:hover{border-color:var(--accent)}
+.home-tile svg.i{width:28px;height:28px;color:var(--accent)}
+.home-tile>div{display:flex;flex-direction:column;gap:4px}
+.home-tile b{font-size:16px}.home-tile span{color:var(--muted);font-size:13px;line-height:1.4}
+.home-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.home-card h2{margin:0;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.home-recent{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.home-recent li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.home-recent li:first-child{border-top:0}
+.home-recent .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-recent .sub{font-size:12px;color:var(--muted)}
+.home-recent .meta{flex:1;min-width:0}
+.home-foot{display:flex;flex-wrap:wrap;gap:10px}
+.home-foot .btn{flex:1 1 160px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.home-top{display:flex;align-items:center;gap:10px}
+.home-top h1{margin:0;font-size:24px;font-weight:800}
+.home .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.home .row>label:first-child,.home .row>.dl{min-width:150px;color:var(--muted);font-size:13px}
+.home .tg{display:flex;align-items:center;gap:8px}
+.home details{border-top:1px solid var(--line);padding:10px 0}
+.home details:first-of-type{border-top:0}
+.home summary{font-weight:700;cursor:pointer;font-size:15px}
+.home details p,.home details li{line-height:1.55;color:var(--ink)}
+.home details ul,.home details ol{padding-left:20px;margin:8px 0}
+.home .kbd{font-size:13px;color:var(--muted);line-height:1.8}
+body.home-open #app{visibility:hidden}
+@media (max-width:560px){.home-tiles{grid-template-columns:1fr}.home-tile{min-height:0;flex-direction:row;align-items:center}.home-head h1{font-size:26px}}
 .docname{flex:1 1 140px;min-width:0;max-width:340px;border:1px solid transparent;background:transparent;border-radius:6px;padding:6px 8px;font-weight:700}
 .docname:hover{border-color:var(--line)} .docname:focus{border-color:var(--accent);background:var(--raise);outline:none}
 .spacer{flex:1}
@@ -270,10 +321,10 @@ textarea.tin{min-height:64px;resize:vertical;font-family:ui-monospace,SFMono-Reg
 <body>
 <div id="app">
   <header class="bar">
-    <div class="brand">
+    <button class="brand" id="btnHome" title="Startbildschirm" aria-label="Startbildschirm">
       <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="3" width="20" height="26" rx="2.5" fill="var(--raise)" stroke="var(--accent)" stroke-width="2"/><path d="M9 10h12M9 15h12M9 20h7" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/><rect x="18" y="18" width="9" height="9" rx="1.5" fill="var(--mark)" stroke="var(--ink)" stroke-width="1.6"/><path d="M20.2 22.5l1.8 1.8 3-3.4" stroke="var(--ink)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span>Blattwerk</span>
-    </div>
+    </button>
     <input id="docName" class="docname" value="Arbeitsblatt" aria-label="Name des Blatts" spellcheck="false" autocomplete="off">
     <button class="layerpill" id="layerPill" title="Neue Elemente landen auf dieser Ebene"><i></i><span>Grundblatt</span></button>
     <div class="spacer"></div>
@@ -294,6 +345,7 @@ textarea.tin{min-height:64px;resize:vertical;font-family:ui-monospace,SFMono-Reg
   <main class="stage" id="stage"><div id="pages"></div></main>
   <aside class="panel" id="panel" aria-label="Eigenschaften"></aside>
 </div>
+<div id="home" class="home" hidden></div>
 <div id="toast" aria-live="polite"></div>
 <!-- Nur MIME-Typen: Android wertet Dateiendungen im accept-Attribut nicht aus
      und graut dann PDFs aus. octet-stream laesst Projektdateien zu, die
@@ -342,7 +394,32 @@ const S = {
   view: { help: true, sol: true }, layer: 'base', snap: true, shape: 'line', clip: null,
   fonts: {}   /* eigene Schriften: id -> { name, bytes } */
 };
-const META_DEF = () => ({ grades: [87.5, 75, 62.5, 50, 25] });
+/* ======================================================================
+   Einstellungen (nur auf diesem Gerät, localStorage). Ungültige oder
+   fehlende Werte fallen auf die Vorgaben zurück.
+   ====================================================================== */
+const PREF_DEF = {
+  start: 'home', theme: 'auto', snap: true, help: true, sol: true,
+  font: 'sans', size: 12, textColor: '#000000', markColor: '#ffe14d', shapeColor: '#000000', shapeWidth: 1.2,
+  formulaColor: '#000000', linesColor: '#8b91a1', bg: 'grid', head: true, grades: [87.5, 75, 62.5, 50, 25]
+};
+const PREF_OK = {
+  start: v => ['home', 'last'].includes(v), theme: v => ['auto', 'light', 'dark'].includes(v), font: v => ['sans', 'serif', 'mono'].includes(v),
+  size: v => v >= 6 && v <= 48, shapeWidth: v => v >= 0.3 && v <= 6, bg: v => ['white', 'grid', 'lines', 'dots', 'mm', 'coord'].includes(v),
+  grades: v => Array.isArray(v) && v.length === 5 && v.every(x => typeof x === 'number' && x >= 0 && x <= 100),
+  textColor: v => isHex(v), markColor: v => isHex(v), shapeColor: v => isHex(v), formulaColor: v => isHex(v), linesColor: v => isHex(v)
+};
+function loadPrefs() {
+  let raw = {};
+  try { raw = JSON.parse(localStorage.getItem('bw:prefs') || '{}') || {}; } catch (e) { raw = {}; }
+  const p = JSON.parse(JSON.stringify(PREF_DEF));
+  for (const k of Object.keys(PREF_DEF)) if (raw[k] !== undefined && typeof raw[k] === typeof PREF_DEF[k] && (!PREF_OK[k] || PREF_OK[k](raw[k]))) p[k] = raw[k];
+  return p;
+}
+const P = loadPrefs();
+function savePrefs() { try { localStorage.setItem('bw:prefs', JSON.stringify(P)); } catch (e) {} }
+S.snap = P.snap; S.view = { help: P.help, sol: P.sol };
+const META_DEF = () => ({ grades: P.grades.slice() });
 
 /* ======================================================================
    Schriften und Vermessung
@@ -635,7 +712,7 @@ function coordPrims(c, ox, oy, opt = {}) {
     let f; try { f = compileExpr(fn.src); } catch (e) { return; }
     const col = isHex(fn.color) ? fn.color : FUNC_COLORS[i % FUNC_COLORS.length];
     const lines = plotPolylines(f, c);
-    for (const l of lines) P.push({ t: 'p', pts: l.map(([x, y]) => [X(x), Y(y)]), w: 1.3, c: col });
+    for (const l of lines) P.push({ t: 'p', pts: l.map(([x, y]) => [X(x), Y(y)]), w: 1.3, c: col, dash: !!fn.dash });
     if (fn.label) {
       /* Beschriftung am rechten Ende des laengsten sichtbaren Stuecks */
       const best = lines.sort((a, b) => b.length - a.length)[0];
@@ -1059,6 +1136,7 @@ const STICKY = new Set(['highlight', 'whiteout', 'check', 'edittext']);
 const TYPE_NAME = { text: 'Text', field: 'Textfeld', check: 'Ankreuzkästchen', highlight: 'Markierung', whiteout: 'Abdeckung', image: 'Bild', lines: 'Schreiblinien', coord: 'Koordinatensystem', formula: 'Formel', table: 'Tabelle', shape: 'Form', points: 'Punktekästchen', qr: 'QR-Code' };
 const TEXT_COLORS = ['#000000', '#4a4f5c', '#2440b3', '#c62828', '#2e7d32', '#b45309'];
 const MARK_COLORS = [['#ffe14d', 'Gelb'], ['#9ef07a', 'Grün'], ['#ff9ecf', 'Rosa'], ['#8fd3ff', 'Blau'], ['#ffb86b', 'Orange']];
+const LINE_COLORS = [['#8b91a1', 'Grau'], ['#c3c8d4', 'Hellgrau'], ['#8aa2e6', 'Blau'], ['#1a1d24', 'Schwarz']];
 const LAYERS = [['base', 'Grundblatt', '#2440b3'], ['help', 'Hilfe', '#0f8a7e'], ['sol', 'Lösung', RED]];
 const AFB = ['', 'I', 'II', 'III'];
 /* Prozessbezogene Kompetenzbereiche (KC Mathematik Niedersachsen, Sek. I) */
@@ -1303,7 +1381,7 @@ function makeObj(o) {
     case 'lines': {
       d.style.height = o.h * z + 'px';
       const g = o.gap * z, t = Math.max(1, 0.6 * z);
-      d.style.backgroundImage = `repeating-linear-gradient(to bottom, transparent 0, transparent ${g - t}px, #8b91a1 ${g - t}px, #8b91a1 ${g}px)`;
+      d.style.backgroundImage = `repeating-linear-gradient(to bottom, transparent 0, transparent ${g - t}px, ${o.color || '#8b91a1'} ${g - t}px, ${o.color || '#8b91a1'} ${g}px)`;
       d.style.backgroundSize = `100% ${Math.floor(o.h / o.gap + 1e-6) * g}px`; d.style.backgroundRepeat = 'no-repeat';
       break;
     }
@@ -1626,8 +1704,8 @@ function addObj(o, opts = {}) {
 }
 function createText(pid, pt) {
   snap();
-  const size = 12, p = page(pid), room = p.w - pt.x - 10;
-  const o = newObj(pid, 'text', { x: r1(pt.x), y: r1(pt.y - size * 0.6), w: room > 60 ? r1(Math.min(260, room)) : 200, h: size * 1.2, runs: [{ t: '' }], text: '', size, font: 'sans', lh: 1.2, align: 'left', color: S.layer === 'sol' ? RED : '#000000', fill: null });
+  const size = P.size, p = page(pid), room = p.w - pt.x - 10;
+  const o = newObj(pid, 'text', { x: r1(pt.x), y: r1(pt.y - size * 0.6), w: room > 60 ? r1(Math.min(260, room)) : 200, h: size * 1.2, runs: [{ t: '' }], text: '', size, font: P.font, lh: 1.2, align: 'left', color: S.layer === 'sol' ? RED : P.textColor, fill: null });
   S.objs.push(o);
   if (!STICKY.has(S.tool)) setTool('select');
   startEdit(o.id, 'new');
@@ -1642,7 +1720,7 @@ function createAt(pid, pt, tool) {
     o = newObj(pid, 'coord', JSON.parse(JSON.stringify(COORD_DEF))); fixCoord(o);
     if (o.w > p.w - 20) { o.unit = Math.max(3, Math.floor((p.w - 20 - 2 * PAD) / (o.xmax - o.xmin) / MM)); fixCoord(o); }
     center(o);
-  } else if (tool === 'formula') { o = newObj(pid, 'formula', { src: '\\frac{1}{2}x + 3', size: 14, color: S.layer === 'sol' ? RED : '#000000' }); computeBox(o); center(o); }
+  } else if (tool === 'formula') { o = newObj(pid, 'formula', { src: '\\frac{1}{2}x + 3', size: 14, color: S.layer === 'sol' ? RED : P.formulaColor }); computeBox(o); center(o); }
   else if (tool === 'table') {
     o = newObj(pid, 'table', { rows: 2, cols: 8, rh: 22, size: 11, head: 'col', fill: true, w: Math.min(440, p.w - 40), name: nextName('table', 'Tabelle'), cells: [['x', '−3', '−2', '−1', '0', '1', '2', '3'], ['y', '', '', '', '', '', '', '']], sol: [], cw: [1.2, 1, 1, 1, 1, 1, 1, 1] });
     fixTable(o); center(o);
@@ -1660,18 +1738,18 @@ function createRect(pid, type, r, extra) {
   let o;
   if (type === 'shape') {
     const k = S.shape;
-    if (k === 'line' || k === 'arrow' || k === 'darrow') o = newObj(pid, 'shape', { kind: k, x1: r.ax, y1: r.ay, x2: r.bx, y2: r.by, color: '#000000', sw: 1.2, dash: false });
+    if (k === 'line' || k === 'arrow' || k === 'darrow') o = newObj(pid, 'shape', { kind: k, x1: r.ax, y1: r.ay, x2: r.bx, y2: r.by, color: P.shapeColor, sw: P.shapeWidth, dash: false });
     else if (k === 'angle') {
       const len = Math.hypot(r.bx - r.ax, r.by - r.ay) || 60, a = Math.atan2(r.by - r.ay, r.bx - r.ax) - Math.PI / 3;
-      o = newObj(pid, 'shape', { kind: 'angle', x1: r.ax, y1: r.ay, x2: r.bx, y2: r.by, x3: r1(r.ax + len * Math.cos(a)), y3: r1(r.ay + len * Math.sin(a)), r: 18, label: 'α', showDeg: false, color: '#000000', sw: 1.2, dash: false });
+      o = newObj(pid, 'shape', { kind: 'angle', x1: r.ax, y1: r.ay, x2: r.bx, y2: r.by, x3: r1(r.ax + len * Math.cos(a)), y3: r1(r.ay + len * Math.sin(a)), r: 18, label: 'α', showDeg: false, color: P.shapeColor, sw: P.shapeWidth, dash: false });
     } else if (k === 'grid') { const cs = 5 * MM; o = newObj(pid, 'shape', { kind: 'grid', x: r.x, y: r.y, cols: Math.max(1, Math.round(r.w / cs)), rows: Math.max(1, Math.round(r.h / cs)), cell: 5, tone: 'mittel' }); }
-    else o = newObj(pid, 'shape', { kind: k, x: r.x, y: r.y, w: r.w, h: r.h, color: '#000000', sw: 1.2, dash: false, fillc: null });
+    else o = newObj(pid, 'shape', { kind: k, x: r.x, y: r.y, w: r.w, h: r.h, color: P.shapeColor, sw: P.shapeWidth, dash: false, fillc: null });
   } else {
     o = newObj(pid, type, { x: r1(r.x), y: r1(r.y), w: r1(r.w), h: r1(r.h) });
-    if (type === 'highlight') o.color = S.lastMark || '#ffe14d';
+    if (type === 'highlight') o.color = P.markColor;
     if (type === 'whiteout') o.color = '#ffffff';
     if (type === 'field') Object.assign(o, { name: nextName('field', 'Feld'), multi: r.h > 34, size: 11, border: true, bg: true, value: '', solution: '' });
-    if (type === 'lines') { o.gap = 24; o.h = Math.max(o.gap, Math.round(r.h / o.gap) * o.gap); }
+    if (type === 'lines') { o.gap = 24; o.h = Math.max(o.gap, Math.round(r.h / o.gap) * o.gap); o.color = P.linesColor; }
   }
   snap();
   addObj(o, { under: type === 'whiteout' });
@@ -2175,6 +2253,7 @@ document.addEventListener('keydown', e => {
   const inField = tgt.closest && tgt.closest('input,textarea,select,[contenteditable="true"]');
   const mod = e.ctrlKey || e.metaKey, k = (e.key || '').toLowerCase();
   if (topDialog()) { if (e.key === 'Escape') topDialog()._close(); return; }
+  if (homeVisible()) { if (e.key === 'Escape' && homeView && homeView !== 'main') { homeView = 'main'; renderHome(); } return; }
   if (inField) return;
   if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if (mod && k === 'y') { e.preventDefault(); redo(); return; }
@@ -2209,6 +2288,17 @@ const toggle = (prop, v, label) => `<label class="tg"><input type="checkbox" id=
 const tin = (prop, v, label, ph) => `<div class="row"><label for="p-${prop}">${label}</label><input class="tin" id="p-${prop}" data-prop="${prop}" value="${esc(v || '')}" placeholder="${esc(ph || '')}" autocomplete="off"></div>`;
 const layerSeg = (cur, attr) => segBtns('layer', LAYERS.map(([v, l]) => [v, l]), cur, attr);
 
+/* Vorgaben für neue Elemente des gewählten Werkzeugs (Farbe, Schrift, Strich) */
+const prefSw = (key, list, custom) => `<div class="sw">${list.map(c => { const [v, n] = Array.isArray(c) ? c : [c, c]; return `<button data-pref="${key}" data-v='"${v}"' style="background:${v}" title="${n}" aria-label="${n}" aria-pressed="${String(P[key]).toLowerCase() === v.toLowerCase()}"></button>`; }).join('')}${custom ? `<input type="color" data-prefcolor="${key}" value="${P[key]}" title="Eigene Farbe" aria-label="Eigene Farbe">` : ''}</div>`;
+function toolPrefs() {
+  let h = '';
+  if (S.tool === 'text') h = row('Farbe', prefSw('textColor', TEXT_COLORS, true)) + row('Schrift', segBtns('font', [['sans', 'Serifenlos'], ['serif', 'Serif'], ['mono', 'Mono']], P.font, 'pref')) + row('Größe', segBtns('size', [[10, '10'], [11, '11'], [12, '12'], [14, '14'], [16, '16']], P.size, 'pref'));
+  else if (S.tool === 'highlight') h = row('Farbe', prefSw('markColor', MARK_COLORS));
+  else if (S.tool === 'shape') h = row('Farbe', prefSw('shapeColor', TEXT_COLORS, true)) + row('Strich', segBtns('shapeWidth', [[0.8, 'dünn'], [1.2, 'mittel'], [2, 'kräftig']], P.shapeWidth, 'pref'));
+  else if (S.tool === 'formula') h = row('Farbe', prefSw('formulaColor', TEXT_COLORS, true));
+  else if (S.tool === 'lines') h = row('Farbe', prefSw('linesColor', LINE_COLORS));
+  return h ? h + '<p class="mini">Gilt für neue Elemente. Ausgewählte Elemente änderst du jederzeit einzeln.</p>' : '';
+}
 function bgPanel(p) {
   if (!p) return '';
   if (p.sid != null) return `<section><h3>Hintergrund</h3><p>Hintergründe gibt es für leere Seiten. Für PDF-Seiten: Werkzeug „Koordinaten“ oder „Formen → Rechenkästchen“.</p></section>`;
@@ -2267,6 +2357,7 @@ function renderPanel() {
   } else if (!o) {
     const t = TOOLS.find(t => t.id === S.tool) || TOOLS[0], i = curIndex(), p = page(S.cur) || S.pages[0];
     h += `<section><h3>Werkzeug</h3><h2>${t.label}</h2><p>${t.hint}</p>
+      ${toolPrefs()}
       ${S.tool === 'shape' ? `<div class="pal">${SHAPES.map(([k, l]) => `<button data-act="shape-${k}" aria-pressed="${S.shape === k}" style="${S.shape === k ? 'border-color:var(--accent);background:var(--accent-soft)' : ''}">${l}</button>`).join('')}</div>` : ''}
       ${S.clip ? '<button class="btn" data-act="paste">Kopiertes hier einfügen</button>' : ''}</section>`;
     h += `<section><h3>Ebenen</h3><p class="mini">Neue Elemente landen auf:</p>${layerSeg(S.layer, 'newlayer')}
@@ -2288,7 +2379,8 @@ function renderPanel() {
       <button class="btn wide" data-act="saveproj">Projekt als Datei sichern</button></div>
       <p class="mini">Alles wird automatisch unter „Meine Blätter“ auf diesem Gerät gespeichert.</p></section>`;
     h += `<section class="wide-only"><h3>Tastenkürzel</h3><div class="kbd">${TOOLS.map(t => `<b>${t.key.toUpperCase()}</b> ${t.label}`).join(' · ')}<br><b>Strg+C/V</b> kopieren/einfügen · <b>Strg+A</b> alles auf der Seite · <b>Strg+Z</b> rückgängig · <b>Strg+B/I/U</b> beim Schreiben</div></section>`;
-    h += `<section><h3>Über Blattwerk</h3><p>Version ${APP_VERSION} · arbeitet vollständig offline. Es werden keine Daten übertragen.</p>
+    h += `<section><h3>Blattwerk</h3><div class="acts"><button class="btn" data-act="about">Hilfe und Erklärungen</button><button class="btn" data-act="settings">Einstellungen</button></div>
+      <p class="mini">Version ${APP_VERSION} · arbeitet vollständig offline. Es werden keine Daten übertragen.</p>
       <div class="links"><a href="datenschutz.html" data-leave="1">Datenschutz</a><a href="impressum.html" data-leave="1">Impressum</a><a href="lizenzen.html" data-leave="1">Lizenzen</a></div></section>`;
   } else {
     h += `<section><h3>Ausgewählt</h3><h2>${TYPE_NAME[o.type] || 'Element'}</h2>${o.fromLine ? '<p class="note">Der Originaltext ist abgedeckt. Löschst du diesen Text, erscheint das Original wieder.</p>' : ''}</section>`;
@@ -2340,7 +2432,7 @@ function typePanel(o) {
       ${toggle('checked', o.checked, 'Für Schüler schon angekreuzt')}</section>`;
   if (o.type === 'highlight') return `<section>${row('Farbe', swatches('color', MARK_COLORS, o.color, false))}</section>`;
   if (o.type === 'whiteout') return `<section>${row('Farbe', swatches('color', [['#ffffff', 'Weiß']], o.color, true))}<p>Passe die Farbe an, wenn das Blatt nicht rein weiß ist.</p></section>`;
-  if (o.type === 'lines') return `<section>${row('Abstand', numIn('gap', o.gap, 12, 48, 2) + PTU)}<p>${Math.floor(o.h / o.gap + 1e-6)} Linien. Ziehe an den Ecken für mehr oder weniger.</p></section>`;
+  if (o.type === 'lines') return `<section>${row('Farbe', swatches('color', LINE_COLORS, o.color || '#8b91a1', false))}${row('Abstand', numIn('gap', o.gap, 12, 48, 2) + PTU)}<p>${Math.floor(o.h / o.gap + 1e-6)} Linien. Ziehe an den Ecken für mehr oder weniger.</p></section>`;
   if (o.type === 'image') return `<section><p>Ziehe an den Ecken, um die Größe zu ändern. Das Seitenverhältnis bleibt erhalten.</p></section>`;
   if (o.type === 'formula') {
     const pal = [['Bruch', '\\frac{}{}', 6], ['Wurzel', '\\sqrt{}', 6], ['n-te Wurzel', '\\sqrt[3]{}', 9], ['x²', '^{2}', 4], ['Potenz', '^{}', 2], ['Index', '_{}', 2], ['Strecke', '\\overline{AB}', 13], ['Vektor', '\\vec{v}', 7], ['Text', '\\text{}', 6]];
@@ -2373,7 +2465,8 @@ function typePanel(o) {
       <input class="tin" data-fn="${i}" data-fk="src" value="${esc(f.src)}" placeholder="z. B. 0,5x + 2" autocomplete="off" aria-label="Funktionsterm ${i + 1}">
       <button class="btn danger" data-act="fn-del" data-i="${i}" aria-label="Funktion entfernen">×</button></div>
       <div class="row" style="padding-left:24px"><input class="tin" style="max-width:70px" data-fn="${i}" data-fk="label" value="${esc(f.label || '')}" placeholder="f" aria-label="Name"><label class="tg"><input type="checkbox" data-fn="${i}" data-fk="sol" ${f.sol ? 'checked' : ''}>nur im Lösungsblatt</label></div>
-      ${(() => { try { if (f.src) compileExpr(f.src); return ''; } catch (e) { return `<p class="warn">${esc(e.message)}</p>`; } })()}`).join('');
+      <div class="row" style="padding-left:24px"><div class="sw">${FUNC_COLORS.concat(['#000000']).map(c => `<button data-fncol="${i}" data-v="${c}" style="background:${c}" aria-label="Farbe ${c}" aria-pressed="${(f.color || '').toLowerCase() === c}"></button>`).join('')}</div><label class="tg"><input type="checkbox" data-fn="${i}" data-fk="dash" ${f.dash ? 'checked' : ''}>gestrichelt</label></div>
+      ${(() => { let m = ''; try { if (f.src) compileExpr(f.src); } catch (e) { m = e.message; } return `<p class="warn" data-fnwarn="${i}" ${m ? '' : 'hidden'}>${esc(m)}</p>`; })()}`).join('');
     return `<section><div class="rng"><span></span><span>von</span><span>bis</span>
           <span>x</span>${numIn('xmin', o.xmin, -100, 100, 1, 'sm')}${numIn('xmax', o.xmax, -100, 100, 1, 'sm')}
           <span>y</span>${numIn('ymin', o.ymin, -100, 100, 1, 'sm')}${numIn('ymax', o.ymax, -100, 100, 1, 'sm')}</div>
@@ -2437,7 +2530,7 @@ function applyProp(prop, v) {
   if (S.editing === o.id) S.editDirty = true; else snapOnce(o.id + prop);
   if (prop === 'kind' && o.type === 'shape') { o.kind = v; }
   else o[prop] = v;
-  if (prop === 'color' && o.type === 'highlight') S.lastMark = v;
+  if (prop === 'color' && o.type === 'highlight') { P.markColor = v; savePrefs(); }
   if (prop === 'gap') o.h = Math.max(v, Math.round(o.h / v) * v);
   if (o.type === 'coord') fixCoord(o);
   if (o.type === 'table') fixTable(o);
@@ -2457,11 +2550,12 @@ panel.addEventListener('input', e => {
     snapOnce(o.id + 'fn' + t.dataset.fn + t.dataset.fk);
     const f = o.funcs[+t.dataset.fn]; f[t.dataset.fk] = t.type === 'checkbox' ? t.checked : t.value;
     renderObjs(o.page); queueSave();
-    if (t.dataset.fk === 'src') { const w = t.parentNode.nextElementSibling && t.parentNode.nextElementSibling.nextElementSibling; let msg = ''; try { if (f.src) compileExpr(f.src); } catch (err) { msg = err.message; } if (w && w.classList.contains('warn')) w.textContent = msg; else if (msg) renderPanel(); }
+    if (t.dataset.fk === 'src') { const w = panel.querySelector(`[data-fnwarn="${t.dataset.fn}"]`); let msg = ''; try { if (f.src) compileExpr(f.src); } catch (err) { msg = err.message; } if (w) { w.textContent = msg; w.hidden = !msg; } }
     if (t.type === 'checkbox') panelSnapFor = null;
     return;
   }
   if (t.dataset.runcolor) { if (isHex(t.value)) applyRunStyle('c', t.value); return; }
+  if (t.dataset.prefcolor) { if (isHex(t.value)) { P[t.dataset.prefcolor] = t.value.toLowerCase(); savePrefs(); } return; }
   const prop = t.dataset.prop; if (!prop) return;
   let v = t.value;
   if (t.dataset.kind === 'num') { v = parseNum(v); if (!isFinite(v) || v < +t.dataset.min || v > +t.dataset.max) return; }
@@ -2487,6 +2581,8 @@ panel.addEventListener('click', async e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
   if (b.dataset.set) { panelSnapFor = null; applyProp(b.dataset.set, JSON.parse(b.dataset.v)); panelSnapFor = null; renderPanel(); return; }
   if (b.dataset.layer) { setLayer(JSON.parse(b.dataset.v)); return; }
+  if (b.dataset.pref) { P[b.dataset.pref] = JSON.parse(b.dataset.v); savePrefs(); renderPanel(); return; }
+  if (b.dataset.fncol != null) { const o = find(S.sel); if (!o || o.type !== 'coord') return; snap(); o.funcs[+b.dataset.fncol].color = b.dataset.v; renderObjs(o.page); renderPanel(); queueSave(); return; }
   if (b.dataset.newlayer) { S.layer = JSON.parse(b.dataset.v); updLayerPill(); renderPanel(); return; }
   if (b.dataset.run) { applyRunStyle(b.dataset.run); return; }
   if (b.dataset.runc) { applyRunStyle('c', b.dataset.runc); return; }
@@ -2514,7 +2610,7 @@ panel.addEventListener('click', async e => {
     addpage: addPage, duppage: dupPage, delpage: delPage, pageup: () => movePage(-1), pagedown: () => movePage(1), rotl: () => rotatePage(-1), rotr: () => rotatePage(1),
     pdfpages: () => $('#filePdf').click(), bgall: bgAll,
     export: exportDialog, saveproj: saveProject, evaluate: () => $('#fileEval').click(), readable: readableCopy, horizon: addHorizon,
-    addfont: () => $('#fileFont').click(),
+    addfont: () => $('#fileFont').click(), about: () => showHome('about'), settings: () => showHome('settings'),
     zin: () => { setZoom(S.zoom * 1.2); renderPanel(); }, zout: () => { setZoom(S.zoom / 1.2); renderPanel(); }, zfit: () => { S.fit = true; applyZoom(); renderPanel(); },
     'tbl-cells': () => { S.tableSol = false; renderPanel(); }, 'tbl-sol': () => { S.tableSol = true; renderPanel(); },
     'tbl-fn': () => tableFromFunction(o),
@@ -2655,12 +2751,12 @@ function cleanState(raw) {
       case 'check': Object.assign(c, { name: str(o.name, 'Kästchen', 120), label: str(o.label, '', 500), fs: clamp(num(o.fs, 11), 4, 72), checked: !!o.checked, correct: !!o.correct }); c.h = clamp(c.h, 4, 80); break;
       case 'highlight': c.color = color('#ffe14d'); break;
       case 'whiteout': c.color = color('#ffffff'); break;
-      case 'lines': c.gap = clamp(num(o.gap, 24), 6, 100); break;
+      case 'lines': c.gap = clamp(num(o.gap, 24), 6, 100); c.color = color('#8b91a1'); break;
       case 'image': c.img = str(o.img, '', 64); break;
       case 'coord':
         for (const k of Object.keys(COORD_DEF)) c[k] = typeof o[k] === typeof COORD_DEF[k] ? o[k] : JSON.parse(JSON.stringify(COORD_DEF[k]));
         if (!TONES[c.tone]) c.tone = 'mittel'; c.xl = str(o.xl, 'x', 12); c.yl = str(o.yl, 'y', 12); c.pts = str(o.pts, '', 500);
-        c.funcs = (Array.isArray(o.funcs) ? o.funcs : []).slice(0, 8).map(f => ({ src: str(f && f.src, '', 200), color: isHex(f && f.color) ? f.color : '#2440b3', label: str(f && f.label, '', 12), sol: !!(f && f.sol) }));
+        c.funcs = (Array.isArray(o.funcs) ? o.funcs : []).slice(0, 8).map(f => ({ src: str(f && f.src, '', 200), color: isHex(f && f.color) ? f.color : '#2440b3', label: str(f && f.label, '', 12), sol: !!(f && f.sol), dash: !!(f && f.dash) }));
         fixCoord(c); break;
       case 'formula': Object.assign(c, { src: str(o.src, '', 2000), size: clamp(num(o.size, 14), 4, 120), color: color('#000000') }); break;
       case 'table': Object.assign(c, { rows: o.rows, cols: o.cols, cells: o.cells, sol: o.sol, rh: clamp(num(o.rh, 20), 8, 200), size: clamp(num(o.size, 11), 4, 48), head: ['row', 'col', 'none'].includes(o.head) ? o.head : 'none', fill: !!o.fill, name: str(o.name, 'Tabelle', 120), cw: Array.isArray(o.cw) && o.cw.every(v => typeof v === 'number' && v > 0) ? o.cw : null });
@@ -2702,6 +2798,7 @@ function resetDoc(fields) {
   S.cur = S.pages[0] && S.pages[0].id;
   stage.scrollTop = 0; stage.scrollLeft = 0;
   buildPages(); renderPanel(); updUndo(); syncPanelOpen();
+  if (!S.booting) hideHome();
 }
 const loadPdfDoc = bytes => pdfjs.getDocument(Object.assign({ data: bytes.slice() }, PDFJS_OPTS)).promise;
 async function pdfPagesInfo(doc, sid) {
@@ -3002,6 +3099,200 @@ async function cropDialog(extBytes, extName) {
   });
   show();
 }
+
+/* ======================================================================
+   Startbildschirm, Einstellungen, Hilfe („Über Blattwerk“)
+   Liegt als Ebene über dem Editor. Das zuletzt bearbeitete Blatt ist im
+   Hintergrund schon geladen, „Weiterarbeiten“ blendet nur die Ebene aus.
+   ====================================================================== */
+const homeEl = $('#home');
+const HICON = {
+  new: '<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/>',
+  open: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v1"/><path d="M3 7v10a2 2 0 002 2h13l3-8H7l-3 8"/>',
+  sample: '<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M8 13l2 2 4-4"/>',
+  lib: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8M10 12h4"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+  back: '<path d="M15 6l-6 6 6 6"/>'
+};
+const hi = k => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${HICON[k]}</svg>`;
+let homeView = null, homeBusy = false;
+const homeVisible = () => !homeEl.hidden;
+
+function applyTheme() {
+  if (P.theme === 'auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.dataset.theme = P.theme;
+}
+async function showHome(view) {
+  endEdit();
+  if (S.multiMode) S.multiMode = false;
+  homeView = view || 'main';
+  homeEl.hidden = false; document.body.classList.add('home-open');
+  flushSave();
+  await renderHome();
+}
+function hideHome() {
+  if (homeEl.hidden) return;
+  homeEl.hidden = true; homeEl.replaceChildren(); homeView = null;
+  document.body.classList.remove('home-open');
+  applyZoom(); renderPanel();
+}
+async function renderHome() {
+  const view = homeView, keepScroll = homeEl.scrollTop;
+  if (view === 'settings') homeEl.innerHTML = await settingsHTML();
+  else if (view === 'about') homeEl.innerHTML = aboutHTML();
+  else homeEl.innerHTML = await homeMainHTML();
+  if (homeView !== view) return;
+  homeEl.scrollTop = view === 'main' ? 0 : keepScroll;
+}
+const fmtDate = t => new Date(t).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+async function homeMainHTML() {
+  let metas = [];
+  try { metas = (await DB.listMeta()).sort((a, b) => b.updated - a.updated); } catch (e) {}
+  const pristineDemo = S.demo && !S.undo.length;
+  const cur = metas.find(m => m.id === S.docId);
+  const cont = S.pages.length && !pristineDemo
+    ? `<button class="home-cont" data-h="continue"><div><b>Weiterarbeiten: ${esc(docName())}</b><span>${cur ? 'zuletzt geändert ' + fmtDate(cur.updated) + ' · ' : ''}${S.pages.length} ${S.pages.length === 1 ? 'Seite' : 'Seiten'}</span></div><span class="go">Öffnen ›</span></button>` : '';
+  const recent = metas.filter(m => m.id !== S.docId).slice(0, 5);
+  return `<div class="home-in">
+    <header class="home-head">${$('.brand .logo').outerHTML}<div><h1>Blattwerk</h1><p>Arbeitsblätter als PDF – ausfüllbar, mit Hilfen und Lösungen, ganz ohne Internet.</p></div></header>
+    ${cont}
+    <div class="home-tiles">
+      <button class="home-tile" data-h="new">${hi('new')}<div><b>Neues Blatt</b><span>Leeres Blatt mit Kästchen, Linien, Punkten oder Koordinatensystem</span></div></button>
+      <button class="home-tile" data-h="open">${hi('open')}<div><b>PDF öffnen</b><span>Arbeitsblatt, Schulbuchseite oder Blattwerk-Projekt vom Gerät</span></div></button>
+      <button class="home-tile" data-h="sample">${hi('sample')}<div><b>Beispielblatt</b><span>Alle Funktionen an einem fertigen Mathe-Blatt ausprobieren</span></div></button>
+      <button class="home-tile" data-h="lib">${hi('lib')}<div><b>Meine Blätter</b><span>${metas.length} ${metas.length === 1 ? 'Blatt' : 'Blätter'} auf diesem Gerät</span></div></button>
+    </div>
+    ${recent.length ? `<section class="home-card"><h2>Zuletzt bearbeitet</h2><ul class="home-recent">${recent.map(m => `<li><div class="meta"><div class="nm">${esc(m.name)}</div><div class="sub">${fmtDate(m.updated)} · ${m.npages} ${m.npages === 1 ? 'Seite' : 'Seiten'}</div></div><button class="btn" data-h="recent" data-id="${esc(m.id)}">Öffnen</button></li>`).join('')}</ul></section>` : ''}
+    <nav class="home-foot"><button class="btn" data-h="settings">${hi('gear')}Einstellungen</button><button class="btn" data-h="about">${hi('info')}Über Blattwerk und Hilfe</button></nav>
+  </div>`;
+}
+
+/* ---------- Einstellungen ---------- */
+const pSeg = (key, opts) => `<div class="seg">${opts.map(([v, l]) => `<button data-pset="${key}" data-v='${esc(JSON.stringify(v))}' aria-pressed="${P[key] === v}">${l}</button>`).join('')}</div>`;
+const pSw = (key, list, custom) => `<div class="sw">${list.map(c => { const [v, n] = Array.isArray(c) ? c : [c, c]; return `<button data-pset="${key}" data-v='"${v}"' style="background:${v}" title="${n}" aria-label="${n}" aria-pressed="${P[key].toLowerCase() === v.toLowerCase()}"></button>`; }).join('')}${custom ? `<input type="color" data-pcolor="${key}" value="${P[key]}" title="Eigene Farbe" aria-label="Eigene Farbe">` : ''}</div>`;
+const pTog = (key, label) => `<label class="tg"><input type="checkbox" data-pbool="${key}" ${P[key] ? 'checked' : ''}>${label}</label>`;
+const pRow = (l, c) => `<div class="row"><span class="dl">${l}</span>${c}</div>`;
+async function settingsHTML() {
+  let n = 0, kind = '';
+  try { n = (await DB.listMeta()).length; kind = await DB.kind(); } catch (e) {}
+  return `<div class="home-in">
+    <div class="home-top"><button class="btn" data-h="main">${hi('back')}Zurück</button><h1>Einstellungen</h1></div>
+    <section class="home-card"><h2>Allgemein</h2>
+      ${pRow('Beim Start zeigen', pSeg('start', [['home', 'Startbildschirm'], ['last', 'Zuletzt bearbeitetes Blatt']]))}
+      ${pRow('Darstellung', pSeg('theme', [['auto', 'Wie das Gerät'], ['light', 'Hell'], ['dark', 'Dunkel']]))}
+    </section>
+    <section class="home-card"><h2>Neue Texte</h2>
+      ${pRow('Schrift', pSeg('font', [['sans', 'Serifenlos'], ['serif', 'Serif'], ['mono', 'Mono']]))}
+      ${pRow('Größe', pSeg('size', [[10, '10'], [11, '11'], [12, '12'], [14, '14'], [16, '16'], [18, '18']]))}
+      ${pRow('Farbe', pSw('textColor', TEXT_COLORS, true))}
+    </section>
+    <section class="home-card"><h2>Farben der Werkzeuge</h2>
+      ${pRow('Markieren', pSw('markColor', MARK_COLORS))}
+      ${pRow('Formen und Pfeile', pSw('shapeColor', TEXT_COLORS, true))}
+      ${pRow('Strichstärke', pSeg('shapeWidth', [[0.8, 'dünn'], [1.2, 'mittel'], [2, 'kräftig']]))}
+      ${pRow('Formeln', pSw('formulaColor', TEXT_COLORS, true))}
+      ${pRow('Schreiblinien', pSw('linesColor', LINE_COLORS))}
+      <p class="mini">Gilt für neue Elemente. Bereits gesetzte Elemente änderst du über die Leiste rechts. Lösungen erscheinen immer rot.</p>
+    </section>
+    <section class="home-card"><h2>Arbeiten</h2>
+      ${pTog('snap', 'Einrasten an Raster und anderen Elementen')}
+      ${pTog('help', 'Hilfen beim Öffnen anzeigen')}
+      ${pTog('sol', 'Lösungen beim Öffnen anzeigen')}
+    </section>
+    <section class="home-card"><h2>Neues Blatt</h2>
+      ${pRow('Hintergrund', pSeg('bg', BG_TYPES.map(([t, l]) => [t, l])))}
+      ${pTog('head', 'Kopfzeile mit Name, Klasse und Datum')}
+    </section>
+    <section class="home-card"><h2>Notenschlüssel (Vorgabe für neue Blätter)</h2>
+      <div class="rng" style="grid-template-columns:auto auto">${P.grades.map((v, i) => `<span>Note ${i + 1} ab</span><span><input class="tin" style="max-width:80px" inputmode="decimal" data-pgrade="${i}" value="${String(v).replace('.', ',')}" aria-label="Note ${i + 1} ab Prozent"> %</span>`).join('')}</div>
+      <p class="mini">Mindestanteil der Punkte. Bitte an die Vorgaben eurer Fachkonferenz anpassen.</p>
+    </section>
+    <section class="home-card"><h2>Speicher</h2>
+      <p>${n} ${n === 1 ? 'Blatt' : 'Blätter'} auf diesem Gerät${kind ? ` (${kind})` : ''}. Nichts davon verlässt das Gerät.</p>
+      <div class="home-foot"><button class="btn" data-h="lib">Meine Blätter verwalten</button><button class="btn" data-h="reset">Einstellungen zurücksetzen</button></div>
+    </section>
+  </div>`;
+}
+function setPref(key, v) {
+  P[key] = v; savePrefs();
+  if (key === 'theme') applyTheme();
+  if (key === 'snap') S.snap = v;
+  if (key === 'help' || key === 'sol') { S.view[key] = v; renderAll(); }
+}
+
+/* ---------- Über Blattwerk und Hilfe ---------- */
+function aboutHTML() {
+  const tools = TOOLS.map(t => `<li><b>${esc(t.label)}</b> (Taste ${t.key.toUpperCase()}): ${esc(t.hint)}</li>`).join('');
+  return `<div class="home-in">
+    <div class="home-top"><button class="btn" data-h="main">${hi('back')}Zurück</button><h1>Über Blattwerk</h1></div>
+    <section class="home-card">
+      <p><b>Blattwerk</b> ist ein Werkzeug für Lehrkräfte: Arbeitsblätter als PDF anpassen, neu gestalten und für Schülerinnen und Schüler ausfüllbar machen. Aus einem Blatt entstehen Schülerfassung, Fassung mit Hilfen und Lösungsblatt. Alles läuft auf diesem Gerät, ohne Konto und ohne Internet.</p>
+      <p class="mini">Version ${APP_VERSION}</p>
+    </section>
+    <section class="home-card"><h2>Erklärungen</h2>
+      <details open><summary>Erste Schritte</summary><ol>
+        <li><b>Neues Blatt</b> anlegen oder ein <b>PDF öffnen</b>. Das Beispielblatt zeigt fast alle Möglichkeiten.</li>
+        <li>Links ein Werkzeug wählen und auf die Seite tippen oder ziehen. Rechts stellst du das gewählte Element ein.</li>
+        <li><b>PDF exportieren</b> oben rechts: Das PDF geht über das Teilen-Menü in „Dateien“, per Mail oder AirDrop. Im Browser landet es im Download-Ordner.</li>
+      </ol><p>Alles wird automatisch unter „Meine Blätter“ gespeichert. Rückgängig und Wiederholen findest du oben.</p></details>
+      <details><summary>Die Werkzeuge</summary><ul>${tools}</ul></details>
+      <details><summary>Vorhandenes PDF bearbeiten</summary><p>Mit <b>Text ändern</b> tippst du eine Zeile im PDF an. Blattwerk deckt sie ab und setzt sie als bearbeitbaren Text ein, in ähnlicher Schrift und Farbe. Eingescannte Seiten enthalten keine Schrift, nur ein Bild: Dort deckst du mit <b>Abdecken</b> ab und schreibst mit <b>Text</b> neu.</p>
+        <p>Über die Leiste rechts fügst du <b>Seiten aus einem anderen PDF</b> ein, duplizierst oder drehst Seiten. Mit <b>Ausschnitt</b> schneidest du einen Bereich aus einem PDF aus, etwa eine Aufgabe aus dem Schulbuch, und setzt ihn als Bild ein.</p></details>
+      <details><summary>Ausfüllbare Felder und Lösungen</summary><p><b>Textfelder</b>, <b>Ankreuzkästchen</b> und leere Zellen einer <b>Tabelle</b> sind im exportierten PDF ausfüllbar – in Adobe Reader, der Dateien-App, in Browsern und auf dem iPad.</p>
+        <p>Bei jedem Textfeld trägst du rechts eine <b>Lösung</b> ein (mehrere richtige Antworten mit | trennen). Bei Kästchen legst du fest, ob sie richtig sind. Bei Wertetabellen berechnet „y-Werte als Lösung“ die Lösungen aus dem Funktionsterm.</p></details>
+      <details><summary>Ebenen: ein Blatt, drei Fassungen</summary><p>Jedes Element liegt auf einer Ebene: <b>Grundblatt</b>, <b>Hilfe</b> oder <b>Lösung</b>. Oben neben dem Blattnamen siehst du, auf welcher Ebene neue Elemente landen; antippen wechselt sie.</p>
+        <p>Beim Export wählst du: <b>Schülerfassung</b> (nur Grundblatt, ausfüllbar), <b>mit Hilfen</b> (für Schüler, die Unterstützung brauchen) und <b>Lösungsblatt</b> (alles, Lösungen rot eingetragen). Ein <b>QR-Code</b> mit den Lösungen der Seite erlaubt Selbstkontrolle mit jeder Kamera-App, ohne Internet.</p></details>
+      <details><summary>Mathematik: Formeln, Graphen, Formen</summary><p><b>Formel</b>: Brüche, Wurzeln, Potenzen, Indizes, Strecken und Vektoren über die Knöpfe rechts. Buchstaben erscheinen kursiv wie im Schulbuch.</p>
+        <p><b>Koordinaten</b>: Bereich, Einheit (z. B. 1 cm), Kästchen, Funktionsgraphen in Heftschreibweise (0,5x + 2, x², sqrt(x), |x|) mit eigener Farbe, gestrichelt oder nur im Lösungsblatt, dazu Punkte wie A(1|3).</p>
+        <p><b>Formen</b>: Strecke, Pfeil, Rechteck, Ellipse, Winkel mit Gradanzeige und Rechenkästchen. Endpunkte lassen sich ziehen; Elemente rasten an Raster und Nachbarn ein (Alt-Taste: frei).</p></details>
+      <details><summary>Klassenarbeit und Erwartungshorizont</summary><p>Setze an jede Aufgabe ein <b>Punktekästchen</b> mit Punktzahl, Anforderungsbereich, Kompetenz und erwarteter Leistung. Rechts siehst du Summe, Verteilung der AFB und den Notenschlüssel. „Erwartungshorizont als Seite anfügen“ erzeugt eine Tabelle, die nur im Lösungsblatt erscheint.</p></details>
+      <details><summary>Ausgefüllte PDFs auswerten</summary><p>Unter „Ausgefüllte PDFs auswerten“ wählst du die zurückgegebenen Schüler-PDFs aus. Blattwerk vergleicht die Eingaben mit den Lösungen und zeigt je Aufgabe den Anteil richtiger Antworten und häufige Fehler, je Schüler die Ergebnisse. „2,5“, „5/2“ und „2.5“ zählen gleich. Freie Antworten bitte selbst prüfen. Die Dateien werden nur gelesen und nicht gespeichert; eine Tabelle (CSV) sicherst du bei Bedarf.</p></details>
+      <details><summary>Lesefreundliche Kopie</summary><p>Erstellt eine zweite Fassung mit mindestens 13 pt Schrift und mehr Zeilenabstand. Inhalte rutschen nach unten und laufen bei Bedarf auf eine neue Seite. Das Original bleibt erhalten.</p></details>
+      <details><summary>Speichern und Datenschutz</summary><p>Blätter, Bilder und eigene Schriften liegen nur auf diesem Gerät. Blattwerk überträgt keine Daten, hat keine Werbung und kein Tracking. Zur Sicherung oder für ein anderes Gerät exportierst du ein Blatt als Projektdatei (Strg+S oder „Projekt als Datei sichern“).</p></details>
+      <details><summary>Tastenkürzel (iPad mit Tastatur, Computer)</summary><p class="kbd">${TOOLS.map(t => `<b>${t.key.toUpperCase()}</b> ${esc(t.label)}`).join(' · ')}<br><b>Strg+C / V</b> kopieren / einfügen · <b>Strg+D</b> duplizieren · <b>Strg+A</b> alles auf der Seite · <b>Strg+Z</b> rückgängig · <b>Strg+S</b> Projektdatei · <b>Strg+B / I / U</b> beim Schreiben · <b>Pfeiltasten</b> verschieben · <b>Entf</b> löschen</p></details>
+    </section>
+    <section class="home-card"><h2>Rechtliches</h2><div class="links"><a href="datenschutz.html" data-leave="1">Datenschutz</a><a href="impressum.html" data-leave="1">Impressum</a><a href="lizenzen.html" data-leave="1">Lizenzen</a></div></section>
+  </div>`;
+}
+
+/* ---------- Bedienung ---------- */
+homeEl.addEventListener('click', async e => {
+  const a = e.target.closest('a[data-leave]');
+  if (a) { e.preventDefault(); await flushSave(); location.href = a.getAttribute('href'); return; }
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.pset) { setPref(b.dataset.pset, JSON.parse(b.dataset.v)); renderHome(); return; }
+  const h = b.dataset.h; if (!h || homeBusy) return;
+  switch (h) {
+    case 'main': case 'settings': case 'about': homeView = h; renderHome(); break;
+    case 'continue': hideHome(); break;
+    case 'new': newDialog(); break;
+    case 'open': $('#fileOpen').click(); break;
+    case 'sample': newSheet(true); break;
+    case 'lib': libraryDialog(); break;
+    case 'recent': {
+      homeBusy = true; const done = busy('Blatt wird geöffnet …');
+      try { await openStored(b.dataset.id); } finally { done(); homeBusy = false; }
+      break;
+    }
+    case 'reset':
+      if (await ask('Alle Einstellungen auf die Vorgaben zurücksetzen? Deine Blätter bleiben erhalten.', 'Zurücksetzen')) {
+        Object.assign(P, JSON.parse(JSON.stringify(PREF_DEF))); savePrefs(); applyTheme(); S.snap = P.snap; renderHome();
+      }
+      break;
+  }
+});
+homeEl.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.pbool) { setPref(t.dataset.pbool, t.checked); return; }
+  if (t.dataset.pcolor && isHex(t.value)) { setPref(t.dataset.pcolor, t.value.toLowerCase()); renderHome(); return; }
+  if (t.dataset.pgrade != null) {
+    const v = parseFloat(String(t.value).replace(',', '.'));
+    if (isFinite(v) && v >= 0 && v <= 100) { const g = P.grades.slice(); g[+t.dataset.pgrade] = v; setPref('grades', g); }
+    t.value = String(P.grades[+t.dataset.pgrade]).replace('.', ',');
+  }
+});
+$('#btnHome').onclick = () => showHome('main');
 
 /* ======================================================================
    Feldnamen und QR-Inhalt
@@ -3313,7 +3604,7 @@ async function buildPdf(opts = {}) {
         case 'lines': {
           const n = Math.floor(o.h / o.gap + 1e-6), L = [];
           for (let k = 1; k <= n; k++) L.push([[o.x, o.y + k * o.gap], [o.x + o.w, o.y + k * o.gap]]);
-          path(L, { stroke: '#8c91a1', w: 0.6 }); break;
+          path(L, { stroke: isHex(o.color) ? o.color : '#8b91a1', w: 0.6 }); break;
         }
         case 'coord': await drawPrims(coordPrims(o, 0, 0, { sol: showSol }), o.x, o.y); break;
         case 'formula': await drawPrims(formulaLayout(o).prims, o.x, o.y); break;
@@ -3709,15 +4000,15 @@ function newSheet(demo, opt = {}) {
 async function newDialog() {
   endEdit();
   await flushSave();
-  let sel = 'grid', land = false;
+  let sel = P.bg, land = false;
   const d = openDialog(`<h2 class="dh">Neues Blatt</h2>
     <div class="tiles">${BG_TYPES.map(([t, l]) => `<button class="tile" data-bg="${t}" aria-pressed="${t === sel}">${bgPreview(t)}<span>${l}</span></button>`).join('')}</div>
     <div class="row"><span class="dl">Format</span><div class="seg"><button data-land="0" aria-pressed="true">Hochformat</button><button data-land="1" aria-pressed="false">Querformat</button></div></div>
-    <label class="tg"><input type="checkbox" id="nhHead" checked>Kopfzeile mit Titel, Name, Klasse und Datum (ausfüllbar)</label>
+    <label class="tg"><input type="checkbox" id="nhHead" ${P.head ? 'checked' : ''}>Kopfzeile mit Titel, Name, Klasse und Datum (ausfüllbar)</label>
     <label class="tg"><input type="checkbox" id="nhBig">Großes Schreibfeld über die ganze Seite (zum Tippen am Tablet)</label>
     <p class="dnote">Exportiert wird ein ausfüllbares PDF. Abstände, Rand und Linienfarbe stellst du danach rechts ein. Dein aktuelles Blatt bleibt unter „Meine Blätter“ gespeichert.</p>
     <div class="row end"><button class="btn" data-r="0">Abbrechen</button><button class="btn primary" data-r="1">Blatt anlegen</button></div>`, 'wide');
-  const close = ok => { const head = d.querySelector('#nhHead').checked, big = d.querySelector('#nhBig').checked; d.remove(); if (ok) { newSheet(false, { bg: sel, land, head, big }); setTool('select'); } };
+  const close = ok => { const head = d.querySelector('#nhHead').checked, big = d.querySelector('#nhBig').checked; d.remove(); if (ok) { P.bg = sel; P.head = head; savePrefs(); newSheet(false, { bg: sel, land, head, big }); setTool('select'); } };
   d._close = () => close(false);
   d.addEventListener('click', e => {
     const t = e.target.closest('[data-bg]'); if (t) { sel = t.dataset.bg; d.querySelectorAll('[data-bg]').forEach(b => b.setAttribute('aria-pressed', String(b === t))); return; }
@@ -3732,7 +4023,12 @@ async function newDialog() {
    ====================================================================== */
 $('#btnNew').onclick = newDialog;
 $('#btnOpen').onclick = libraryDialog;
-$('#fileOpen').onchange = e => { const f = e.target.files[0]; e.target.value = ''; openFile(f); };
+$('#fileOpen').onchange = async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  await openFile(f);
+  /* Ein Bild vom Startbildschirm aus landet im aktuellen Blatt: dorthin wechseln. */
+  if (homeVisible() && /^image\//.test(f.type || '')) hideHome();
+};
 $('#fileImg').onchange = e => { const f = e.target.files[0]; e.target.value = ''; insertImage(f); };
 $('#filePdf').onchange = async e => {
   const f = e.target.files[0], mode = e.target.dataset.mode; e.target.value = ''; delete e.target.dataset.mode;
@@ -3763,6 +4059,7 @@ stage.addEventListener('scroll', () => {
 }, { passive: true });
 let rz = 0; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.fit) applyZoom(); else paintVisible(); }, 150); });
 document.addEventListener('paste', e => {
+  if (homeVisible()) return;
   if (e.target.closest && e.target.closest('input,textarea,[contenteditable="true"],[contenteditable="plaintext-only"]')) return;
   const f = [...((e.clipboardData || {}).files || [])].find(f => /^image\//.test(f.type));
   if (f) { e.preventDefault(); insertImage(f); }
@@ -3779,10 +4076,15 @@ document.addEventListener('drop', e => {
 document.addEventListener('backbutton', () => {
   const d = topDialog();
   if (d) { d._close ? d._close() : d.remove(); return; }
+  if (homeVisible()) {
+    if (homeView !== 'main') { homeView = 'main'; renderHome(); return; }
+    flushSave().then(() => { if (navigator.app && navigator.app.exitApp) navigator.app.exitApp(); });
+    return;
+  }
   if (S.editing) { endEdit(); return; }
   if (selIds().length) { S.multiMode = false; select(null); return; }
   if (S.tool !== 'select') { setTool('select'); return; }
-  flushSave().then(() => { if (navigator.app && navigator.app.exitApp) navigator.app.exitApp(); });
+  showHome('main');
 }, false);
 /* iOS beendet Apps im Hintergrund ohne Vorwarnung: beim Wechsel sofort sichern. */
 document.addEventListener('pause', () => { endEdit(); flushSave(); }, false);
@@ -3805,7 +4107,9 @@ async function loadFonts() {
   await Promise.race([Promise.all([css, loadFontkitFonts()]), new Promise(r => setTimeout(r, 8000))]);
   widthCache.clear();
 }
+applyTheme();
 async function boot() {
+  S.booting = true;
   buildTools();
   setTool('select');
   await loadFonts();
@@ -3819,6 +4123,8 @@ async function boot() {
     if (metas.length) opened = await openStored(metas[0].id, true);
   } catch (e) { console.warn('Gerätespeicher nicht verfügbar', e); }
   if (!opened) newSheet(true);
+  S.booting = false;
+  if (P.start === 'home' || !opened) await showHome('main');
   document.documentElement.dataset.ready = '1';
 }
 if (IS_APP) document.addEventListener('deviceready', boot, { once: true }); else boot();
@@ -3826,7 +4132,8 @@ if (IS_APP) document.addEventListener('deviceready', boot, { once: true }); else
 /* Nur für die automatischen Tests (smoketest.js). */
 window.__bw = { S, DB, flushSave, buildPdf, setZoom, convertLine, ensureLines, fieldNames, qrText, mathPlain, evaluateFiles, evalItems, isCorrect, readableCopy, readableTransform, addHorizon,
   compileExpr, parseMath, layoutText, textWidth, cleanState, loadProject, projectJSON, insertPdfPages, rotatePage, selectIds, copySel, pasteClip, undo, redo, snap, renderAll,
-  createAt, createRect, applyRunStyle, startEdit, endEdit, find, examStats, openStored, newSheet, exportDialog, runExport, evalCSV, fixTable, fixCoord };
+  createAt, createRect, applyRunStyle, startEdit, endEdit, find, examStats, openStored, newSheet, exportDialog, runExport, evalCSV, fixTable, fixCoord,
+  P, savePrefs, showHome, hideHome, homeVisible };
 })();
 </script>
 </body>

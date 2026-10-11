@@ -96,6 +96,7 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
     <li>Ihre Bearbeitungen: Texte, Formeln, Markierungen, Textfelder, Ankreuzkästchen, Tabellen,
         Formen, Linien, Koordinatensysteme, Hintergründe, hinterlegte Lösungen und Punkte</li>
     <li>Schriftdateien, die Sie selbst zur App hinzufügen</li>
+    <li>Ihre Einstellungen, etwa Farben, Schriftgröße und Darstellung</li>
     <li>Bilder und Fotos, die Sie in ein Blatt einfügen</li>
     <li>den Namen jedes Blatts und den Zeitpunkt der letzten Änderung</li>
   </ul>

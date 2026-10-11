@@ -4,6 +4,16 @@
 
 ### Neu
 
+- **Startbildschirm**: Neues Blatt, PDF öffnen, Beispielblatt, Meine Blätter,
+  „Weiterarbeiten“ und die zuletzt bearbeiteten Blätter; erreichbar über das
+  Logo oben links und die Android-Zurücktaste
+- **Einstellungen**: Startverhalten, Darstellung hell/dunkel/wie das Gerät,
+  Schrift, Größe und Farbe neuer Texte, Farben der Werkzeuge (Markieren,
+  Formen, Formeln, Schreiblinien), Strichstärke, Einrasten, Hilfen/Lösungen
+  anzeigen, Hintergrund neuer Blätter, Notenschlüssel-Vorgabe
+- **Über Blattwerk**: Erklärungen zu allen Bereichen, Tastenkürzel, Rechtliches
+- **Farben**: Werkzeug-Farbe schon vor dem Zeichnen wählbar; Funktionsgraphen
+  mit eigener Farbe und gestrichelt; Schreiblinien in vier Farben
 - **Text**: Formatierung einzelner Wörter (fett, kursiv, unterstrichen,
   durchgestrichen, Farbe), Ausrichtung links/Mitte/rechts, Zeilenabstand 1,2/1,5/2,
   eigene Schriften (.ttf/.otf, werden auf dem Gerät gespeichert)
@@ -48,6 +58,7 @@
 | Tabelle an der Ecke ziehen | Zeilenhöhe sprang | Formel vereinfacht |
 | Eigene Schriften im localStorage-Ersatz | Nach Neustart verloren | Werden mit Daten zurückgelesen |
 | Wertetabelle aus Funktion bei nur einer Zeile | Skriptfehler | Hinweis statt Absturz |
+| `docs/.nojekyll` war leer | Beim Hochladen über github.com fiel die Datei weg, die Prüfung „Rechtstexte“ schlug im CI fehl | Datei hat jetzt einen Inhalt |
 | Lösung mit Alternativen auf dem Bildschirm | „2 \| m = 2“ roh angezeigt | „2 oder m = 2“ wie im Lösungsblatt |
 
 ### Übernahme älterer Daten
@@ -58,7 +69,7 @@ PDF-Datei wird weiter gelesen. smoketest.js prüft beides.
 
 ### Prüfungen
 
-- smoketest.js: 130 Prüfungen (vorher 53), darunter Lesbarkeit des QR-Codes
+- smoketest.js: 147 Prüfungen (vorher 53), darunter Lesbarkeit des QR-Codes
   (jsQR), Farben und Lage im gerenderten PDF, Rundreise der Auswertung mit
   per pdf-lib ausgefüllten Schüler-PDFs, Formel-Einschleusung in der CSV
 - Gegenprobe mit absichtlich eingebauten Fehlern (Untermengen-Schriften,

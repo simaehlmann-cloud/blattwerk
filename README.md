@@ -20,6 +20,8 @@ GitHub Actions bauen iOS und Android.
 
 Neu in 1.1:
 
+- Startbildschirm, Einstellungen (Farben, Schrift, Darstellung, Vorgaben)
+  und „Über Blattwerk“ mit Erklärungen
 - Formatierung je Wort (fett, kursiv, unterstrichen, durchgestrichen, Farbe),
   Ausrichtung, Zeilenabstand, eigene Schriften (.ttf/.otf)
 - Formeln (Brüche, Wurzeln, Potenzen, Indizes, Strecken, Vektoren),

@@ -36,6 +36,10 @@ gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
 - Lösungen: Feld `solution` (Alternativen mit `|`), Kästchen `correct`,
   Tabelle `sol[][]`, Funktion `sol: true`, Elemente auf Ebene `sol`
 - `cleanState()` bereinigt jede Eingabe und hebt 1.0-Daten an
+- Einstellungen `P` in localStorage `bw:prefs` (nur Gerät), Vorgaben `PREF_DEF`,
+  Prüfung je Schlüssel `PREF_OK`; Darstellung über `data-theme` am `<html>`
+- Startbildschirm `#home` liegt über dem Editor; das letzte Blatt ist dahinter
+  geladen. `resetDoc()` blendet ihn aus (außer beim Start, `S.booting`)
 
 ## Kennungen
 
@@ -47,7 +51,7 @@ gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
 ## Prüfkette
 
     node validate.js       (16 Prüfgruppen)
-    node smoketest.js      (130 Prüfungen, Playwright + pdftoppm + qpdf + jsQR)
+    node smoketest.js      (147 Prüfungen, Playwright + pdftoppm + qpdf + jsQR)
 
 Chromium braucht eine UTF-8-Locale, sonst heißen Downloads mit Umlaut
 „download“ (smoketest.js setzt `LANG=C.UTF-8`).

@@ -181,6 +181,17 @@ async function main() {
   await page.goto(base);
   await page.waitForSelector('html[data-ready="1"]', { timeout: 20000 });
   check('App startet ohne Fehler', errs.length === 0, errs.join(' / '));
+  check('Startbildschirm mit Neu, Öffnen, Beispiel, Meine Blätter, Einstellungen, Hilfe', await page.isVisible('#home') &&
+    (await page.locator('#home [data-h="new"], #home [data-h="open"], #home [data-h="sample"], #home [data-h="lib"], #home [data-h="settings"], #home [data-h="about"]').count()) === 6);
+  check('Erster Start: kein „Weiterarbeiten“', (await page.locator('#home [data-h="continue"]').count()) === 0);
+  await page.click('#home [data-h="about"]');
+  check('Über Blattwerk: Erklärungen zu allen Bereichen', (await page.locator('#home details').count()) >= 9 && /Ausgefüllte PDFs auswerten/.test(await page.textContent('#home')) && /Version 1\.1/.test(await page.textContent('#home')));
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#home [data-h="sample"]', { timeout: 3000 }).catch(() => {});
+  check('Escape führt zurück zum Startbildschirm', (await page.locator('#home [data-h="sample"]').count()) === 1);
+  await page.click('#home [data-h="sample"]');
+  await page.waitForSelector('#home', { state: 'hidden' });
+  check('Beispielblatt vom Startbildschirm geöffnet', !(await page.isVisible('#home')));
   check('Eingebaute Schriften geladen', await page.evaluate(() => document.fonts.check('12px "BW Sans"') && document.fonts.check('12px "BW Math"')));
   check('Vermessung über fontkit (wie im PDF)', await S(`(() => { const w = B.textWidth('Hallo Welt', 'NotoSans-Regular', 10); return w > 40 && w < 60; })()`));
   check('Beispielblatt mit 26 Elementen', (await S('S.objs.length')) === 26, await S('S.objs.length'));
@@ -361,6 +372,11 @@ async function main() {
   await page.fill('#panel [data-fn="0"][data-fk="src"]', '2x +');
   check('Fehlerhafter Term: verständliche Meldung', /unvollständig/i.test(await page.textContent('#panel')));
   await page.fill('#panel [data-fn="0"][data-fk="src"]', '0,5x + 2');
+  await page.click('#panel [data-fncol="0"][data-v="#c62828"]');
+  await page.check('#panel [data-fn="0"][data-fk="dash"]');
+  check('Funktionsgraph: Farbe wählbar und gestrichelt', (await sel()).funcs[0].color === '#c62828' && (await sel()).funcs[0].dash === true && (await page.locator('.obj.sel svg path[stroke="#c62828"][stroke-dasharray]').count()) >= 1);
+  await page.click('#panel [data-fncol="0"][data-v="#2440b3"]');
+  await page.uncheck('#panel [data-fn="0"][data-fk="dash"]');
   check('Funktionsgraph wird gezeichnet', (await sel()).funcs[0].src === '0,5x + 2' && (await page.locator('.obj.sel svg path[stroke="#2440b3"]').count()) >= 1);
   const terms = await page.evaluate(() => { const c = s => window.__bw.compileExpr(s); return [c('0,5x+2')(2), c('2x^2-3')(2), c('3(x-1)^2')(3), c('|x|')(-4), c('sqrt(x)')(9), c('x²')(3), c('f(x) = 2x')(4), c('1/x')(4), c('2sin(x)')(0), c('-x^2')(3)]; });
   check('Funktionsterme in Schulschreibweise', JSON.stringify(terms) === JSON.stringify([3, 5, 12, 4, 3, 9, 8, 0.25, 0, -9]), JSON.stringify(terms));
@@ -455,7 +471,10 @@ async function main() {
   const nameBefore = await page.inputValue('#docName'), objsBefore = await S('S.objs.length');
   await page.evaluate(() => window.__bw.flushSave());
   await page.reload(); await page.waitForSelector('html[data-ready="1"]');
-  check('Nach Neustart ist das letzte Blatt wieder da', (await page.inputValue('#docName')) === nameBefore && (await S('S.objs.length')) === objsBefore);
+  check('Nach Neustart: Startbildschirm bietet „Weiterarbeiten“ mit dem letzten Blatt', await page.isVisible('#home') && (await page.textContent('#home [data-h="continue"]')).includes(nameBefore));
+  check('Startbildschirm listet zuletzt bearbeitete Blätter', (await page.locator('#home .home-recent li').count()) >= 1);
+  await page.click('#home [data-h="continue"]');
+  check('Nach Neustart ist das letzte Blatt wieder da', !(await page.isVisible('#home')) && (await page.inputValue('#docName')) === nameBefore && (await S('S.objs.length')) === objsBefore);
   await page.click('#btnOpen');
   await page.waitForSelector('.lib li', { timeout: 10000 });
   const libCount = await page.locator('.lib li').count();
@@ -725,6 +744,12 @@ async function main() {
   await app.waitForSelector('.dlg');
   await app.evaluate(() => document.dispatchEvent(new Event('backbutton')));
   check('Android-Zurücktaste schließt zuerst den Dialog', (await app.locator('.dlg').count()) === 0);
+  await app.evaluate(() => document.dispatchEvent(new Event('backbutton')));
+  check('Android-Zurücktaste im Editor führt zum Startbildschirm', await app.isVisible('#home'));
+  await app.click('#home [data-h="settings"]');
+  await app.evaluate(() => document.dispatchEvent(new Event('backbutton')));
+  await app.waitForSelector('#home [data-h="sample"]', { timeout: 3000 }).catch(() => {});
+  check('Zurücktaste in den Einstellungen führt zur Startseite', (await app.locator('#home [data-h="sample"]').count()) === 1);
   await app.close();
   {
     const ctx2 = await browser.newContext({ viewport: { width: 1200, height: 900 } });
@@ -738,6 +763,34 @@ async function main() {
       (await lp.evaluate(() => window.__bw.S.objs[1].text)) === 'Gespeichert ohne IndexedDB');
     await ctx2.close();
   }
+  /* Einstellungen und Farben der Werkzeuge */
+  check('Nach Neustart erscheint der Startbildschirm', await page.isVisible('#home'));
+  await page.evaluate(() => window.__bw.hideHome());
+  await page.click('#btnHome');
+  await page.click('#home [data-h="settings"]');
+  await page.click(`#home [data-pset="textColor"][data-v='"#c62828"']`);
+  await page.click(`#home [data-pset="size"][data-v='14']`);
+  await page.click(`#home [data-pset="theme"][data-v='"dark"']`);
+  await page.click(`#home [data-pset="start"][data-v='"last"']`);
+  check('Einstellungen: dunkle Darstellung sofort aktiv', (await page.evaluate(() => document.documentElement.dataset.theme)) === 'dark');
+  await page.reload(); await page.waitForSelector('html[data-ready="1"]');
+  check('Einstellung „zuletzt bearbeitetes Blatt“: kein Startbildschirm, Einstellungen bleiben', !(await page.isVisible('#home')) && (await page.evaluate(() => document.documentElement.dataset.theme)) === 'dark');
+  await page.evaluate(() => window.__bw.newSheet(false, { bg: 'white' }));
+  await key('t'); await clickAt(80, 300); await page.keyboard.type('Rot'); await key('Escape');
+  const tr = await S(`S.objs.find(o => o.type === 'text' && o.text === 'Rot')`);
+  check('Neuer Text in Farbe und Größe aus den Einstellungen', tr && tr.color === '#c62828' && tr.size === 14, tr && tr.color + '/' + tr.size);
+  await key('m');
+  await page.click(`#panel [data-pref="markColor"][data-v='"#9ef07a"']`);
+  await dragPt(80, 400, 300, 414);
+  check('Werkzeug-Farbe vorab gewählt: Markierung grün', (await S(`S.objs.filter(o => o.type === 'highlight').pop().color`)) === '#9ef07a');
+  await key('l');
+  await page.click(`#panel [data-pref="linesColor"][data-v='"#8aa2e6"']`);
+  await dragPt(80, 450, 400, 550);
+  check('Schreiblinien in gewählter Farbe', (await S(`S.objs.filter(o => o.type === 'lines').pop().color`)) === '#8aa2e6');
+  await page.click('#btnHome'); await page.click('#home [data-h="settings"]');
+  await page.click('#home [data-h="reset"]'); await page.click('.dlg [data-r="1"]');
+  check('Einstellungen zurücksetzen', (await page.evaluate(() => window.__bw.P.textColor === '#000000' && window.__bw.P.start === 'home' && !document.documentElement.dataset.theme)));
+  await page.evaluate(() => window.__bw.hideHome());
   const z0 = await S('S.zoom');
   await page.evaluate(() => {
     const st = document.getElementById('stage'), r = st.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
