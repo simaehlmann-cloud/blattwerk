@@ -1,0 +1,26 @@
+# Abhaengigkeiten der Pruefwerkzeuge
+node_modules/
+
+# Erzeugt im CI-Lauf (make-ios-icons.py), gehoert nicht ins Repo
+res/ios/icon-*.png
+res/ios/Default@2x~universal~anyany.png
+
+# Cordova-Bauordner
+build/
+
+# Signierung – niemals ins Repo
+*.p12
+*.keystore
+*.jks
+*.mobileprovision
+*.p8
+*.cer
+*.key
+*.csr
+ios-signierung/
+android-signierung/
+secret-*.txt
+
+# Testausgaben
+test/ausgabe/
+.DS_Store
