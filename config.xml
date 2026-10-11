@@ -1,0 +1,109 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Versionsnummern: version, android-versionCode und ios-CFBundleVersion
+     werden gemeinsam angehoben. Der Code ist Major*10000 + Minor*100 + Patch
+     (1.0.0 -> 10000). validate.js prueft, dass alle drei zur APP_VERSION in
+     der index.html und zum Cache-Namen in sw.js passen. -->
+<widget id="de.blattwerk.app"
+        version="1.1.0"
+        android-versionCode="10100"
+        ios-CFBundleVersion="10100"
+        xmlns="http://www.w3.org/ns/widgets"
+        xmlns:cdv="http://cordova.apache.org/ns/1.0">
+
+    <name>Blattwerk</name>
+    <description>Arbeitsblätter als PDF bearbeiten und ausfüllbar machen – für Lehrkräfte. Läuft vollständig offline.</description>
+    <author email="smaehlmann.appdev@gmail.com">Wisdompeak Apps – Simon Mählmann</author>
+
+    <content src="index.html" />
+
+    <!-- Kein <access origin="*"> und kein <allow-navigation> nach aussen:
+         Die App laedt nichts aus dem Netz. Links aus den Rechtstexten gehen
+         per allow-intent an den System-Browser, statt die App-Oberflaeche zu
+         ersetzen (auf dem iPhone gaebe es keinen Weg zurueck). -->
+    <allow-intent href="mailto:*" />
+    <allow-intent href="https://*/*" />
+
+    <preference name="DisallowOverscroll" value="true" />
+    <preference name="Fullscreen" value="false" />
+    <preference name="Orientation" value="default" />
+    <preference name="BackgroundColor" value="0xff2440b3" />
+
+    <platform name="android">
+        <preference name="android-minSdkVersion"     value="24" />
+        <preference name="android-targetSdkVersion"  value="36" />
+        <preference name="android-compileSdkVersion" value="36" />
+        <preference name="AndroidInsecureFileModeEnabled" value="false" />
+        <preference name="AndroidXEnabled" value="true" />
+
+        <!-- Startbildschirm (Android 12+) -->
+        <preference name="AndroidWindowSplashScreenBackground" value="#2440b3" />
+        <preference name="AndroidWindowSplashScreenAnimatedIcon" value="res/android/icon_fg_xxxhdpi.png" />
+
+        <resource-file src="res/android/colors.xml" target="/app/src/main/res/values/blattwerk_colors.xml" />
+
+        <icon density="ldpi"    background="@color/blattwerk_icon_background" foreground="res/android/icon_fg_ldpi.png"    src="res/android/icon_ldpi.png" />
+        <icon density="mdpi"    background="@color/blattwerk_icon_background" foreground="res/android/icon_fg_mdpi.png"    src="res/android/icon_mdpi.png" />
+        <icon density="hdpi"    background="@color/blattwerk_icon_background" foreground="res/android/icon_fg_hdpi.png"    src="res/android/icon_hdpi.png" />
+        <icon density="xhdpi"   background="@color/blattwerk_icon_background" foreground="res/android/icon_fg_xhdpi.png"   src="res/android/icon_xhdpi.png" />
+        <icon density="xxhdpi"  background="@color/blattwerk_icon_background" foreground="res/android/icon_fg_xxhdpi.png"  src="res/android/icon_xxhdpi.png" />
+        <icon density="xxxhdpi" background="@color/blattwerk_icon_background" foreground="res/android/icon_fg_xxxhdpi.png" src="res/android/icon_xxxhdpi.png" />
+    </platform>
+
+    <platform name="ios">
+        <!-- Wie FairMix: 15.0, damit Apple Uploads auch 2027 annimmt. -->
+        <preference name="deployment-target" value="15.0" />
+        <preference name="AllowBackForwardNavigationGestures" value="true" />
+
+        <!-- Die Kopfzeile wechselt mit dem Farbmodus zwischen hell und dunkel.
+             "default" laesst iOS die Statusleiste passend dazu einfaerben. -->
+        <preference name="StatusBarOverlaysWebView" value="true" />
+        <preference name="StatusBarStyle" value="default" />
+
+        <edit-config target="ITSAppUsesNonExemptEncryption" file="*-Info.plist" mode="overwrite">
+            <false/>
+        </edit-config>
+
+        <!-- Das Dateifeld "Bild" bietet auf dem iPhone auch "Foto aufnehmen"
+             an. Ohne diesen Text beendet iOS die App beim Tippen darauf,
+             ohne jede Meldung. -->
+        <edit-config target="NSCameraUsageDescription" file="*-Info.plist" mode="overwrite">
+            <string>Blattwerk nutzt die Kamera nur, wenn du ein Foto direkt in ein Arbeitsblatt einfügst. Das Foto bleibt auf deinem Gerät.</string>
+        </edit-config>
+
+        <!-- Das Teilen-Plugin bringt Fotomediathek-Schluessel mit Cordovas
+             Platzhaltertext mit. Apples automatische Pruefung weist Platzhalter
+             ab (bei FairMix Build 12203 geschehen). Deshalb eigene Texte. -->
+        <edit-config target="NSPhotoLibraryUsageDescription" file="*-Info.plist" mode="overwrite">
+            <string>Blattwerk zeigt dir deine Fotos nur, wenn du ein Bild in ein Arbeitsblatt einfügen möchtest. Es werden keine Fotos verändert.</string>
+        </edit-config>
+        <edit-config target="NSPhotoLibraryAddUsageDescription" file="*-Info.plist" mode="overwrite">
+            <string>Blattwerk speichert auf deinen Wunsch ein Bild in deiner Fotomediathek. Vorhandene Fotos werden weder gelesen noch verändert.</string>
+        </edit-config>
+
+        <!-- Privacy-Manifest: wie bei FairMix ersetzt der Workflow das von
+             cordova-ios mitgelieferte an Ort und Stelle (kein resource-file,
+             sonst "duplicate output file"). -->
+
+        <icon src="res/ios/icon-20.png"   width="20"   height="20" />
+        <icon src="res/ios/icon-29.png"   width="29"   height="29" />
+        <icon src="res/ios/icon-40.png"   width="40"   height="40" />
+        <icon src="res/ios/icon-58.png"   width="58"   height="58" />
+        <icon src="res/ios/icon-60.png"   width="60"   height="60" />
+        <icon src="res/ios/icon-76.png"   width="76"   height="76" />
+        <icon src="res/ios/icon-80.png"   width="80"   height="80" />
+        <icon src="res/ios/icon-87.png"   width="87"   height="87" />
+        <icon src="res/ios/icon-120.png"  width="120"  height="120" />
+        <icon src="res/ios/icon-152.png"  width="152"  height="152" />
+        <icon src="res/ios/icon-167.png"  width="167"  height="167" />
+        <icon src="res/ios/icon-180.png"  width="180"  height="180" />
+        <icon src="res/ios/icon-1024.png" width="1024" height="1024" />
+
+        <splash src="res/ios/Default@2x~universal~anyany.png" />
+    </platform>
+
+    <!-- PDF- und Projekt-Export laufen ueber das Teilen-Menue, genau wie in
+         FairMix. Von dort aus speichert man auf dem iPhone mit "In Dateien
+         sichern", auf Android im Download-Ordner oder in einer anderen App. -->
+    <plugin name="cordova-plugin-x-socialsharing" spec="^6.0.4" />
+    <plugin name="cordova-plugin-statusbar" spec="^4.0.0" />
+</widget>

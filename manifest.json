@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Blattwerk – Arbeitsblätter bearbeiten",
+  "short_name": "Blattwerk",
+  "description": "Arbeitsblätter als PDF bearbeiten und ausfüllbar machen – für Lehrkräfte. Läuft vollständig offline.",
+  "lang": "de",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#2440b3",
+  "theme_color": "#2440b3",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "icon-192.png",           "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon.png",               "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png",  "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

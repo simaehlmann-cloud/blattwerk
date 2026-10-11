@@ -1,0 +1,15 @@
+{
+  "name": "blattwerk",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Blattwerk – Arbeitsblätter als PDF bearbeiten und ausfüllbar machen. Nur Prüfwerkzeuge; die App selbst hat keine Abhängigkeiten zur Laufzeit.",
+  "scripts": {
+    "pruefen": "node validate.js && node smoketest.js"
+  },
+  "devDependencies": {
+    "jsqr": "1.4.0",
+    "pdf-lib": "1.17.1",
+    "pdfjs-dist": "3.11.174",
+    "playwright": "1.56.0"
+  }
+}
