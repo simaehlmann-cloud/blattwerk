@@ -82,6 +82,8 @@ button.brand:hover{background:var(--accent-soft)}
 .home-head svg{width:56px;height:56px;flex:none}
 .home-head h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.02em}
 .home-head p{margin:2px 0 0;color:var(--muted)}
+.home-priv{display:flex;gap:10px;align-items:flex-start;margin:0;padding:12px 14px;border-radius:12px;background:var(--accent-soft);line-height:1.45;font-size:14px}
+.home-priv svg{width:20px;height:20px;flex:none;margin-top:1px;color:var(--accent)}
 .home-cont{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px 16px;border-radius:14px;border:1.5px solid var(--accent);background:var(--raise);box-shadow:var(--shadow)}
 .home-cont b{display:block;font-size:16px}.home-cont span{color:var(--muted);font-size:13px}
 .home-cont .go{margin-left:auto;font-weight:700;color:var(--accent);white-space:nowrap}
@@ -126,13 +128,32 @@ body.home-open #app{visibility:hidden}
 .zoom button:hover{background:var(--accent-soft)}
 .zoom .zl{min-width:58px;font-variant-numeric:tabular-nums;font-size:13px}
 .sep{width:1px;height:24px;background:var(--line);flex:none}
-.layerpill{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:15px;border:1px solid var(--line);font-size:12px;font-weight:700;background:var(--raise)}
-.layerpill i{width:9px;height:9px;border-radius:50%;display:inline-block}
+/* Ansicht = Fassung: was man sieht, wird exportiert; Neues landet auf dieser Ebene */
+.vseg{display:inline-flex;border:1px solid var(--line);border-radius:17px;overflow:hidden;background:var(--raise);flex:none}
+.vseg button{border:0;background:transparent;height:32px;padding:0 12px;font-size:12.5px;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.vseg button+button{border-left:1px solid var(--line)}
+.vseg button i{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.vseg button[aria-pressed="true"]{background:var(--vc,var(--accent));color:#fff}
+.vseg button[aria-pressed="true"] i{background:#fff!important}
+.vsel-wrap{align-items:center;height:32px;padding:0 2px 0 8px;border:1.5px solid var(--line);border-radius:16px;background:var(--raise);flex:none}
+.vsel{border:0;background:transparent;font-size:12.5px;font-weight:700;padding:4px 0}
+.vw-sel{display:none}
+@media (max-width:720px){.vw-seg{display:none}.vw-sel{display:inline-flex}}
+@media (max-width:1320px){.brand span,.hb.hide-xs .lb{display:none}}
+@media (max-width:1060px){.hb.primary .lb,.bar .sep{display:none}.hb.primary{padding:0 12px}}
+@media (max-width:560px){.hide-xs{display:none}}
+/* Seiten nur fürs Lösungsblatt (Erwartungshorizont) außerhalb von „+ Lösung“ */
+.pwrap.off .page{opacity:.35}
+.pwrap.off .pcap::after{content:" – in dieser Ansicht ausgeblendet"}
 
 .tools{grid-area:tools;display:flex;flex-direction:column;gap:1px;padding:8px 6px;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto}
 .tool{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:10px;border:0;background:transparent;color:var(--muted);font-size:10.5px;line-height:1.15;text-align:center}
 .tool svg.i{width:21px;height:21px}
 .tool:hover{background:var(--accent-soft);color:var(--ink)}
+.tools.simple .tool.extra{display:none}
+.tools.simple .tool.extra[aria-pressed="true"],.tools.simple.more .tool.extra{display:flex}
+.tool.more-btn{color:var(--ink)}
+.tool.more-btn[aria-expanded="true"]{background:var(--accent-soft)}
 .tool[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 
 .stage{grid-area:stage;overflow:auto;position:relative;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;
@@ -156,6 +177,7 @@ body.splitting .page{cursor:row-resize}
 .ebox:hover{background:rgba(198,40,40,.18);border-style:solid}
 .obj.solcover{opacity:.35;outline:1.5px dashed #c62828;outline-offset:0}
 .obj.solcover::after{content:"Lösung";position:absolute;left:0;top:-12px;font-size:9px;font-weight:700;color:#c62828;opacity:1}
+.page.over-text{cursor:text}
 .lnbox{position:absolute;border:1px dashed rgba(36,64,179,.55);background:rgba(36,64,179,.06);border-radius:2px;cursor:text}
 .lnbox:hover{background:rgba(36,64,179,.16);border-style:solid}
 .lnbox.ocr,.ebox.ocr{z-index:4}
@@ -332,9 +354,10 @@ textarea.tin{min-height:64px;resize:vertical;font-family:ui-monospace,SFMono-Reg
 @media (max-width:860px){
   #app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto;grid-template-areas:"bar" "stage" "panel" "tools"}
   .bar{padding-left:10px;padding-right:10px;gap:2px}
-  .brand span,.hb .lb,.zoom,.wide-only,.layerpill{display:none}
+  .brand span,.hb .lb,.zoom,.wide-only{display:none}
   .hb{padding:0 8px}
   .only-narrow{display:inline-flex} .panel section.only-narrow{display:flex}
+  .tools.simple:not(.more) .tool{flex:1 1 0;min-width:0;padding-left:0;padding-right:0;font-size:10px}
   .tools{flex-direction:row;border-right:0;border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));overflow-x:auto;overflow-y:hidden;gap:2px}
   .tool{min-width:64px;flex:none}
   .panel{display:none;border-left:0;border-top:1px solid var(--line);max-height:46vh;padding-bottom:12px}
@@ -352,10 +375,11 @@ textarea.tin{min-height:64px;resize:vertical;font-family:ui-monospace,SFMono-Reg
       <span>Blattwerk</span>
     </button>
     <input id="docName" class="docname" value="Arbeitsblatt" aria-label="Name des Blatts" spellcheck="false" autocomplete="off">
-    <button class="layerpill" id="layerPill" title="Neue Elemente landen auf dieser Ebene"><i></i><span>Grundblatt</span></button>
+    <div class="vseg vw-seg" id="viewSeg" role="group" aria-label="Ansicht: welche Fassung du siehst und bearbeitest"></div>
+    <label class="vsel-wrap vw-sel" title="Ansicht: welche Fassung du siehst und bearbeitest"><select class="vsel" id="viewSel" aria-label="Ansicht"></select></label>
     <div class="spacer"></div>
-    <button class="hb" id="btnNew" title="Neues Blatt mit Hintergrund"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg><span class="lb">Neu</span></button>
-    <button class="hb" id="btnOpen" title="Meine Blätter und Dateien öffnen"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span class="lb">Meine Blätter</span></button>
+    <button class="hb hide-xs" id="btnNew" title="Neues Blatt mit Hintergrund"><svg class="i" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/></svg><span class="lb">Neu</span></button>
+    <button class="hb hide-xs" id="btnOpen" title="Meine Blätter und Dateien öffnen"><svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span class="lb">Meine Blätter</span></button>
     <div class="sep wide-only"></div>
     <button class="hb" id="btnUndo" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled><svg class="i" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-4"/></svg></button>
     <button class="hb" id="btnRedo" title="Wiederholen (Strg+Umschalt+Z)" aria-label="Wiederholen" disabled><svg class="i" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 000 10h4"/></svg></button>
@@ -392,7 +416,7 @@ textarea.tin{min-height:64px;resize:vertical;font-family:ui-monospace,SFMono-Reg
 'use strict';
 
 /* Muss zu sw.js (CACHE), config.xml (version) und package.json passen. validate.js prueft das. */
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 
 const pdfjs = window.pdfjsLib;
 const PL = window.PDFLib;
@@ -425,12 +449,12 @@ const S = {
    fehlende Werte fallen auf die Vorgaben zurück.
    ====================================================================== */
 const PREF_DEF = {
-  start: 'home', theme: 'auto', snap: true, help: true, sol: true,
+  start: 'home', theme: 'auto', snap: true, mode: 'simple', view: 'base',
   font: 'sans', size: 12, textColor: '#000000', markColor: '#ffe14d', shapeColor: '#000000', shapeWidth: 1.2,
   formulaColor: '#000000', linesColor: '#8b91a1', bg: 'grid', head: true, grades: [87.5, 75, 62.5, 50, 25]
 };
 const PREF_OK = {
-  start: v => ['home', 'last'].includes(v), theme: v => ['auto', 'light', 'dark'].includes(v), font: v => ['sans', 'serif', 'mono'].includes(v),
+  start: v => ['home', 'last'].includes(v), mode: v => ['simple', 'all'].includes(v), view: v => ['base', 'help', 'sol'].includes(v), theme: v => ['auto', 'light', 'dark'].includes(v), font: v => ['sans', 'serif', 'mono'].includes(v),
   size: v => v >= 6 && v <= 48, shapeWidth: v => v >= 0.3 && v <= 6, bg: v => ['white', 'grid', 'lines', 'dots', 'mm', 'coord'].includes(v),
   grades: v => Array.isArray(v) && v.length === 5 && v.every(x => typeof x === 'number' && x >= 0 && x <= 100),
   textColor: v => isHex(v), markColor: v => isHex(v), shapeColor: v => isHex(v), formulaColor: v => isHex(v), linesColor: v => isHex(v)
@@ -444,7 +468,7 @@ function loadPrefs() {
 }
 const P = loadPrefs();
 function savePrefs() { try { localStorage.setItem('bw:prefs', JSON.stringify(P)); } catch (e) {} }
-S.snap = P.snap; S.view = { help: P.help, sol: P.sol };
+S.snap = P.snap; S.layer = P.view; S.view = { help: P.view !== 'base', sol: P.view === 'sol' };
 const META_DEF = () => ({ grades: P.grades.slice() });
 
 /* ======================================================================
@@ -1217,7 +1241,7 @@ const ICON = {
   qr: '<rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><path d="M14 14h2v2M18 14h2M14 18h2M18 18v2h2"/>'
 };
 const TOOLS = [
-  { id: 'select', label: 'Auswählen', key: 'v', hint: 'Element antippen, um es zu verschieben oder zu ändern. Text: ein zweites Mal antippen zum Bearbeiten. Mit gedrückter Umschalttaste oder „Mehrere auswählen“ wählst du mehrere Elemente.' },
+  { id: 'select', label: 'Auswählen', key: 'v', hint: 'Element antippen, um es zu verschieben oder zu ändern. Text: ein zweites Mal antippen zum Bearbeiten. Text im PDF antippen, um ihn direkt zu ändern. Mit gedrückter Umschalttaste oder „Mehrere auswählen“ wählst du mehrere Elemente.' },
   { id: 'edittext', label: 'Text ändern', key: 'e', hint: 'Vorhandenen Text im PDF antippen. Die Zeile wird abgedeckt und als bearbeitbarer Text eingesetzt. Bei Scans und Fotos vorher „Text erkennen“.' },
   { id: 'text', label: 'Text', key: 't', hint: 'Auf die Seite tippen und losschreiben. Einzelne Wörter markieren und dann Fett, Kursiv, Unterstreichen oder Farbe wählen.' },
   { id: 'formula', label: 'Formel', key: 'y', hint: 'Antippen, um eine Formel einzufügen: Brüche, Wurzeln, Potenzen, Indizes, Strecken und Vektoren über die Knöpfe rechts.' },
@@ -1235,6 +1259,8 @@ const TOOLS = [
   { id: 'points', label: 'Punkte', key: 'p', hint: 'Antippen, um ein Punktekästchen für eine Aufgabe zu setzen. Mit Anforderungsbereich, Kompetenz und Erwartung für den Erwartungshorizont.' },
   { id: 'qr', label: 'QR-Code', key: 'q', hint: 'Antippen, um einen QR-Code zur Selbstkontrolle einzufügen. Er enthält die Lösungen dieser Seite und funktioniert ohne Internet.' }
 ];
+/* Einfache Bedienung: nur diese Werkzeuge stehen in der Leiste, der Rest unter „Mehr“ */
+const CORE_TOOLS = ['select', 'text', 'highlight', 'erase', 'field', 'image'];
 const DRAW = new Set(['highlight', 'whiteout', 'field', 'lines', 'shape']);
 const TAP = new Set(['text', 'check', 'coord', 'formula', 'table', 'points', 'qr']);
 const STICKY = new Set(['highlight', 'whiteout', 'check', 'edittext']);
@@ -1242,7 +1268,7 @@ const TYPE_NAME = { text: 'Text', field: 'Textfeld', check: 'Ankreuzkästchen', 
 const TEXT_COLORS = ['#000000', '#4a4f5c', '#2440b3', '#c62828', '#2e7d32', '#b45309'];
 const MARK_COLORS = [['#ffe14d', 'Gelb'], ['#9ef07a', 'Grün'], ['#ff9ecf', 'Rosa'], ['#8fd3ff', 'Blau'], ['#ffb86b', 'Orange']];
 const LINE_COLORS = [['#8b91a1', 'Grau'], ['#c3c8d4', 'Hellgrau'], ['#8aa2e6', 'Blau'], ['#1a1d24', 'Schwarz']];
-const LAYERS = [['base', 'Grundblatt', '#2440b3'], ['help', 'Hilfe', '#0f8a7e'], ['sol', 'Lösung', RED]];
+const LAYERS = [['base', 'Arbeitsblatt', '#2440b3'], ['help', 'Hilfe', '#0f8a7e'], ['sol', 'Lösung', RED]];
 const AFB = ['', 'I', 'II', 'III'];
 /* Prozessbezogene Kompetenzbereiche (KC Mathematik Niedersachsen, Sek. I) */
 const COMPS = [['', '–'], ['K1', 'Mathematisch argumentieren'], ['K2', 'Probleme mathematisch lösen'], ['K3', 'Mathematisch modellieren'], ['K4', 'Mathematische Darstellungen verwenden'], ['K5', 'Mit symbolischen, formalen und technischen Elementen umgehen'], ['K6', 'Mathematisch kommunizieren']];
@@ -1286,9 +1312,26 @@ function busy(msg) {
 }
 
 function buildTools() {
-  toolsEl.innerHTML = TOOLS.map(t => `<button class="tool" data-tool="${t.id}" title="${t.label} (${t.key.toUpperCase()})" aria-pressed="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICON[t.id]}</svg>${t.label}</button>`).join('');
-  toolsEl.addEventListener('click', e => { const b = e.target.closest('[data-tool]'); if (b) setTool(b.dataset.tool); });
+  const simple = P.mode === 'simple';
+  const btn = t => `<button class="tool${simple && !CORE_TOOLS.includes(t.id) ? ' extra' : ''}" data-tool="${t.id}" title="${t.label} (${t.key.toUpperCase()})" aria-pressed="${S.tool === t.id}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICON[t.id]}</svg>${t.label}</button>`;
+  toolsEl.classList.toggle('simple', simple); toolsEl.classList.remove('more');
+  toolsEl.innerHTML = simple
+    ? TOOLS.filter(t => CORE_TOOLS.includes(t.id)).map(btn).join('') + `<button class="tool more-btn" id="toolsMore" aria-expanded="false" title="Weitere Werkzeuge"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg><span>Mehr</span></button>` + TOOLS.filter(t => !CORE_TOOLS.includes(t.id)).map(btn).join('')
+    : TOOLS.map(btn).join('');
 }
+function toggleMoreTools(open) {
+  const m = $('#toolsMore'); if (!m) return;
+  open = open == null ? !toolsEl.classList.contains('more') : open;
+  toolsEl.classList.toggle('more', open); m.setAttribute('aria-expanded', String(open));
+  m.querySelector('span').textContent = open ? 'Weniger' : 'Mehr';
+  if (open) { const first = toolsEl.querySelector('.tool.extra'); if (first) first.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+}
+toolsEl.addEventListener('click', e => {
+  if (e.target.closest('#toolsMore')) { toggleMoreTools(); return; }
+  const b = e.target.closest('[data-tool]'); if (!b) return;
+  setTool(b.dataset.tool);
+  if (b.classList.contains('extra')) toggleMoreTools(false);
+});
 function setTool(id) {
   endEdit();
   if (S.splitMode) { S.splitMode = false; document.body.classList.remove('splitting'); }
@@ -1309,9 +1352,32 @@ function setTool(id) {
   renderPanel();
 }
 function syncPanelOpen() { document.body.classList.toggle('panel-open', S.panelOpen || selIds().length > 0); }
-function updLayerPill() {
-  const l = LAYERS.find(x => x[0] === S.layer) || LAYERS[0], pill = $('#layerPill');
-  pill.querySelector('i').style.background = l[2]; pill.querySelector('span').textContent = l[1];
+/* Ansicht = Fassung. „Arbeitsblatt“ zeigt nur das Grundblatt, „+ Hilfen“
+   zusätzlich die Hilfen, „+ Lösung“ alles. Neue Elemente landen auf der
+   Ebene der gewählten Ansicht – was man sieht, ist das, was man bearbeitet. */
+/* Ein Knopf für alles, was das Blatt verlässt: in der App über das Teilen-Menü */
+const exportLabel = () => IS_APP ? 'Teilen' : 'PDF exportieren';
+const VIEWS = [['base', 'Arbeitsblatt', 'Arbeitsblatt'], ['help', '+ Hilfen', 'Mit Hilfen'], ['sol', '+ Lösung', 'Mit Lösung']];
+function setView(m) {
+  if (!VIEWS.some(v => v[0] === m)) m = 'base';
+  endEdit();
+  S.layer = m; S.view = { help: m !== 'base', sol: m === 'sol' };
+  if (selIds().some(id => !visible(find(id)))) setSel(null);
+  updViewSwitch(); markCur(); renderAll(); renderPanel();
+}
+function updViewSwitch() {
+  /* Knöpfe nur einmal bauen, danach nur den Zustand ändern: Würden sie bei
+     jedem Neuzeichnen ersetzt, ginge ein Klick verloren, der gerade ein
+     Bearbeiten beendet (pointerdown und click auf verschiedenen Elementen). */
+  const col = k => (LAYERS.find(l => l[0] === k) || LAYERS[0])[2], seg = $('#viewSeg'), sel = $('#viewSel');
+  if (!seg.children.length) {
+    seg.innerHTML = VIEWS.map(([k, l, t]) => `<button data-vm="${k}" style="--vc:${col(k)}" title="${t}${k === 'base' ? '' : ' – neue Elemente landen auf dieser Ebene'}"><i style="background:${col(k)}"></i>${l}</button>`).join('');
+    /* Schmal: kurze Namen, Farbe am Rand statt Punkt */
+    sel.innerHTML = VIEWS.map(([k, l]) => `<option value="${k}">${k === 'base' ? 'Blatt' : l}</option>`).join('');
+  }
+  seg.querySelectorAll('[data-vm]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vm === S.layer)));
+  if (sel.value !== S.layer) sel.value = S.layer;
+  sel.parentNode.style.borderColor = col(S.layer);
 }
 
 /* ======================================================================
@@ -1331,6 +1397,9 @@ function buildPages() {
   applyZoom();
   stage.scrollTop = keepTop; stage.scrollLeft = keepLeft;
   if (S.tool === 'edittext') prepareLines();
+  /* Für „Text antippen“: Zeilen aller PDF-Seiten im Hintergrund lesen */
+  const ids = S.pages.filter(p => p.sid != null).map(p => p.id);
+  if (ids.length) setTimeout(() => ids.reduce((pr, id) => pr.then(() => page(id) ? ensureLines(id) : null), Promise.resolve()), 250);
 }
 /* Seite in den Blick holen (nach Duplizieren, Drehen, Einfügen) */
 function showPage(id, block) { requestAnimationFrame(() => { const pg = pageEl(id); if (pg) pg.scrollIntoView({ block: block || 'nearest' }); }); }
@@ -1410,7 +1479,12 @@ function paintVisible() {
     });
   });
 }
-function markCur() { pagesEl.querySelectorAll('.page').forEach(pg => pg.classList.toggle('cur', pg.dataset.id === S.cur && S.pages.length > 1)); }
+function markCur() {
+  pagesEl.querySelectorAll('.page').forEach(pg => {
+    pg.classList.toggle('cur', pg.dataset.id === S.cur && S.pages.length > 1);
+    const p = page(pg.dataset.id); pg.parentNode.classList.toggle('off', !!p && p.layer === 'sol' && !S.view.sol);
+  });
+}
 function setCur(id) { if (S.cur === id) return; S.cur = id; markCur(); if (!selIds().length) renderPanel(); }
 
 /* ======================================================================
@@ -1624,6 +1698,24 @@ function ensureLines(pid) {
 }
 /* Alle Zeilen einer Seite: Schrift aus dem PDF plus erkannter Text (Scans, Fotos) */
 const linesOf = pid => ((S.lines[pid] || {}).list || []).concat(ocrLines(pid));
+/* Zeile im PDF (oder erkannter Text) unter einem Punkt – für „Auswählen“:
+   Text antippen ändert ihn direkt, ohne eigenes Werkzeug. */
+/* Tipp auf eine eingescannte Seite ohne erkannten Text: Texterkennung anbieten
+   (einmal je Seite), damit „Text antippen“ auch bei Scans zum Ziel führt. */
+const scanHinted = new Set();
+async function offerOcr(pid) {
+  const p = page(pid); if (!p || p.ocr || scanHinted.has(pid) || !(await isScanPage(pid))) return;
+  scanHinted.add(pid);
+  toast('Diese Seite ist ein Scan: Der Text ist nur ein Bild. Blattwerk kann ihn erkennen – danach kannst du ihn antippen und ändern.', [['Text erkennen', () => ocrPages([pid])]], 12000);
+}
+function lineAt(pid, pt) {
+  const used = new Set(S.objs.filter(o => o.page === pid && o.fromLine).map(o => o.fromLine));
+  for (const L of linesOf(pid)) {
+    if (used.has(L.k)) continue;
+    if (pt.x >= L.x - 2 && pt.x <= L.x + L.w + 2 && pt.y >= L.base - L.fs * 0.95 && pt.y <= L.base + L.fs * 0.3) return L.k;
+  }
+  return null;
+}
 async function prepareLines() {
   const hasImg = S.objs.some(o => o.type === 'image');
   if (!S.pages.some(p => p.sid != null) && !hasImg) { toast('„Text ändern“ funktioniert bei Seiten aus einem PDF und bei Fotos von Arbeitsblättern. Eigene Texte verschiebst du mit „Auswählen“.'); return; }
@@ -2036,8 +2128,11 @@ function endEdit() {
 /* ======================================================================
    Erzeugen
    ====================================================================== */
+/* Was Schüler ausfüllen, gehört immer zum Arbeitsblatt – auch wenn es in der
+   Ansicht „+ Lösung“ angelegt wird. Die Lösung steckt im Element selbst. */
+const BASE_TYPES = new Set(['field', 'check', 'table', 'points', 'qr']);
 function newObj(pid, type, props) {
-  const o = Object.assign({ id: nid('o'), page: pid, type, layer: S.layer, x: 0, y: 0, w: 10, h: 10 }, props);
+  const o = Object.assign({ id: nid('o'), page: pid, type, layer: BASE_TYPES.has(type) ? 'base' : S.layer, x: 0, y: 0, w: 10, h: 10 }, props);
   if (o.layer === 'sol' && ['text', 'formula'].includes(type) && !props.color) o.color = RED;
   return o;
 }
@@ -2303,7 +2398,7 @@ pagesEl.addEventListener('pointerdown', e => {
     return;
   }
   const ln = e.target.closest('.lnbox');
-  if (S.tool === 'edittext' && ln) { G = { kind: 'tap', act: 'line', pid, pg, start: pt, k: ln.dataset.k, sx: e.clientX, sy: e.clientY }; return; }
+  if (S.tool === 'edittext' && ln) { if (e.pointerType !== 'mouse') { e.preventDefault(); const a = document.activeElement; if (a && a !== document.body && !pg.contains(a) && a.blur) a.blur(); } G = { kind: 'tap', act: 'line', pid, pg, start: pt, k: ln.dataset.k, sx: e.clientX, sy: e.clientY }; return; }
   if (oEl && !DRAW.has(S.tool)) {
     const id = oEl.dataset.id;
     endEdit();
@@ -2314,8 +2409,31 @@ pagesEl.addEventListener('pointerdown', e => {
     G = { kind: 'move', ids, o: find(id), pid, start: pt, origs: captureOrigs(ids), pg, moved: false, was: was && !e.shiftKey };
     e.preventDefault(); return;
   }
+  /* Auswählen: Text im PDF antippen ändert ihn. Ist noch etwas ausgewählt,
+     hebt der erste Tipp nur die Auswahl auf – so wird nichts aus Versehen
+     umgewandelt. */
+  /* Finger und Stift: Nach einem Tipp schickt der Browser noch Maus-Ereignisse
+     an dieselbe Stelle. Öffnet der Tipp das Panel (schmale Ansicht), landen sie
+     dort und nehmen dem neuen Text den Fokus. preventDefault unterdrückt sie;
+     Scrollen bleibt (touch-action). */
+  const noCompat = () => {
+    if (e.pointerType === 'mouse') return;
+    e.preventDefault();
+    /* Ohne mousedown verliert ein Eingabefeld (Blattname, Panel) sonst nicht den Fokus */
+    const a = document.activeElement; if (a && a !== document.body && !pg.contains(a) && a.blur) a.blur();
+  };
+  const textTap = S.tool === 'select' && !S.multiMode && !e.shiftKey && !selIds().length && !S.editing;
+  const lineK = textTap ? lineAt(pid, pt) : null;
+  if (lineK && e.pointerType !== 'mouse') { noCompat(); G = { kind: 'tap', act: 'line', pid, pg, start: pt, k: lineK, sx: e.clientX, sy: e.clientY }; return; }
+  if (textTap && !lineK && page(pid).sid != null && S.lines[pid] && !page(pid).ocr) offerOcr(pid);
+  if (textTap && !lineK && page(pid).sid != null && !S.lines[pid]) {
+    /* Zeilen dieser Seite noch nicht gelesen: jetzt lesen; war es ein Tipp
+       (kein Wischen), wird er danach ausgeführt */
+    ensureLines(pid); noCompat();
+    G = { kind: 'tap', act: 'pending', pid, pg, start: pt, sx: e.clientX, sy: e.clientY }; return;
+  }
   endEdit();
-  if (TAP.has(S.tool)) { G = { kind: 'tap', act: S.tool, pid, pg, start: pt, sx: e.clientX, sy: e.clientY }; return; }
+  if (TAP.has(S.tool)) { noCompat(); G = { kind: 'tap', act: S.tool, pid, pg, start: pt, sx: e.clientX, sy: e.clientY }; return; }
   if (DRAW.has(S.tool)) {
     e.preventDefault();
     const sp = snapPt(pt, page(pid), new Set());
@@ -2330,12 +2448,19 @@ pagesEl.addEventListener('pointerdown', e => {
   /* Rahmenauswahl mit der Maus auf freier Flaeche */
   if (S.tool === 'select' && e.pointerType === 'mouse') {
     const gh = document.createElement('div'); gh.className = 'marquee'; pg.querySelector('.guides').append(gh);
-    G = { kind: 'marquee', pid, pg, start: pt, cur: pt, gh, add: e.shiftKey };
+    G = { kind: 'marquee', pid, pg, start: pt, cur: pt, gh, add: e.shiftKey, line: lineK };
     if (!e.shiftKey) select(null);
     return;
   }
   if (S.multiMode) { S.multiMode = false; }
   select(null);
+});
+/* Maus über PDF-Text: Textcursor zeigt, dass Antippen ihn ändert */
+pagesEl.addEventListener('pointermove', e => {
+  if (G || e.pointerType !== 'mouse') return;
+  const pg = e.target.closest('.page'); if (!pg) return;
+  const on = S.tool === 'select' && !selIds().length && !S.editing && !e.target.closest('.obj') && !!lineAt(pg.dataset.id, toPt(e, pg));
+  pg.classList.toggle('over-text', on);
 });
 window.addEventListener('pointermove', e => {
   if (!G || pinch) return;
@@ -2427,6 +2552,10 @@ function finishGesture() {
     return;
   }
   if (g.kind === 'tap') {
+    if (g.act === 'pending') {
+      ensureLines(g.pid).then(() => { if (S.tool !== 'select' || selIds().length || S.editing) return; const k = lineAt(g.pid, g.start); if (k) convertLine(g.pid, k); else offerOcr(g.pid); });
+      return;
+    }
     if (g.act === 'line') { endEdit(); convertLine(g.pid, g.k); }
     else if (g.act === 'text') createText(g.pid, g.start);
     else createAt(g.pid, g.start, g.act);
@@ -2435,7 +2564,7 @@ function finishGesture() {
   if (g.kind === 'marquee') {
     g.gh.remove();
     const r = normRect(g.start, g.cur, page(g.pid));
-    if (r.w < 3 && r.h < 3) return;
+    if (r.w < 3 && r.h < 3) { if (g.line) convertLine(g.pid, g.line); return; }
     const hit = S.objs.filter(o => o.page === g.pid && visible(o) && o.x < r.x + r.w && o.x + o.w > r.x && o.y < r.y + r.h && o.y + o.h > r.y).map(o => o.id);
     selectIds(g.add ? [...new Set(selIds().concat(hit))] : hit);
     return;
@@ -2530,6 +2659,8 @@ function pasteClip() {
   snap();
   Object.assign(S.imgs, S.clip.imgs);
   const made = S.clip.objs.map(o => { const c = cloneObj(o, pid, off, off); moveObj(c, clamp(c.x, -c.w + 10, p.w - 10) - c.x, clamp(c.y, -c.h + 10, p.h - 10) - c.y); S.objs.push(c); return c; });
+  /* Eingefügtes aus einer ausgeblendeten Ebene: Ansicht wechselt mit */
+  if (!made.every(visible)) setView(made.some(c => layerOf(c) === 'sol') ? 'sol' : 'help');
   selectIds(made.map(c => c.id)); queueSave();
 }
 function order(dir) {
@@ -2563,6 +2694,9 @@ function nudge(dx, dy) {
 function setLayer(l) {
   const os = selIds().map(find).filter(Boolean); if (!os.length) return; snap();
   for (const o of os) { o.layer = l; if (l === 'sol' && ['text', 'formula'].includes(o.type) && (o.color || '#000000') === '#000000') o.color = RED; }
+  /* Verschobenes soll nicht verschwinden: Ansicht wechselt mit, wenn die
+     Ebene dort ausgeblendet ist. */
+  if (!os.every(visible)) { setView(l); toast('Ansicht gewechselt zu „' + VIEWS.find(v => v[0] === l)[2] + '“, damit du das Element weiter siehst.'); }
   renderObjs(os[0].page); renderPanel(); queueSave();
 }
 
@@ -2763,9 +2897,6 @@ function renderPanel() {
       ${toolPrefs()}
       ${S.tool === 'shape' ? `<div class="pal">${SHAPES.map(([k, l]) => `<button data-act="shape-${k}" aria-pressed="${S.shape === k}" style="${S.shape === k ? 'border-color:var(--accent);background:var(--accent-soft)' : ''}">${l}</button>`).join('')}</div>` : ''}
       ${S.clip ? '<button class="btn" data-act="paste">Kopiertes hier einfügen</button>' : ''}</section>`;
-    h += `<section><h3>Ebenen</h3><p class="mini">Neue Elemente landen auf:</p>${layerSeg(S.layer, 'newlayer')}
-      ${toggle('view.help', S.view.help, 'Hilfen anzeigen')}${toggle('view.sol', S.view.sol, 'Lösungen anzeigen')}
-      <p class="mini">Beim Export wählst du: Schülerfassung, mit Hilfen oder Lösungsblatt – aus demselben Blatt.</p></section>`;
     h += `<section><h3>Seite ${i + 1} von ${S.pages.length}</h3><div class="acts">
       <button class="btn" data-act="addpage">Leere Seite</button><button class="btn" data-act="pdfpages">Seiten aus PDF</button>
       <button class="btn" data-act="duppage">Duplizieren</button><button class="btn" data-act="rotl">⟲ Drehen</button>
@@ -2777,21 +2908,24 @@ function renderPanel() {
     h += bgPanel(p);
     h += `<section><h3>Ansicht</h3>${toggle('snap', S.snap, 'Einrasten an Raster und Elementen')}<p class="mini wide-only">Mit gedrückter Alt-Taste rastet nichts ein.</p>
       <div class="row only-narrow"><div class="num"><button data-act="zout" aria-label="Verkleinern">−</button><input value="${Math.round(S.zoom * 100)} %" readonly aria-label="Zoom"><button data-act="zin" aria-label="Vergrößern">+</button></div><button class="btn" data-act="zfit">Einpassen</button></div></section>`;
-    h += examPanel();
-    h += `<section><h3>Für Schüler ausfüllbar</h3><div class="stat"><div><b>${fields}</b>Textfelder</div><div><b>${checks}</b>Ankreuzkästchen</div></div>
-      <div class="acts"><button class="btn primary wide" data-act="export">PDF exportieren</button>
-      <button class="btn wide" data-act="formcheck">Formular prüfen</button>
-      <button class="btn wide" data-act="evaluate">Ausgefüllte PDFs auswerten</button>
-      <button class="btn wide" data-act="readable">Lesefreundliche Kopie anlegen</button>
-      <button class="btn wide" data-act="saveproj">Projekt als Datei sichern</button></div>
-      <p class="mini">Alles wird automatisch unter „Meine Blätter“ auf diesem Gerät gespeichert.</p></section>`;
-    h += `<section class="wide-only"><h3>Tastenkürzel</h3><div class="kbd">${TOOLS.map(t => `<b>${t.key.toUpperCase()}</b> ${t.label}`).join(' · ')}<br><b>Strg+C/V</b> kopieren/einfügen · <b>Strg+A</b> alles auf der Seite · <b>Strg+Z</b> rückgängig · <b>Strg+B/I/U</b> beim Schreiben</div></section>`;
+    const all = P.mode === 'all';
+    if (all || S.objs.some(x => x.type === 'points')) h += examPanel();
+    if (all || fields + checks) h += `<section><h3>Für Schüler ausfüllbar</h3><div class="stat"><div><b>${fields}</b>Textfelder</div><div><b>${checks}</b>Ankreuzkästchen</div></div>
+      <div class="acts"><button class="btn wide" data-act="formcheck">Formular prüfen</button>
+      <button class="btn wide" data-act="evaluate">Ausgefüllte PDFs auswerten</button></div></section>`;
+    h += `<section><h3>Sichern</h3><p class="mini">Alles wird automatisch unter „Meine Blätter“ auf diesem Gerät gespeichert. Fassungen für Schüler und das Lösungsblatt gibt es über „${esc(exportLabel())}“ oben rechts.</p>
+      <div class="acts"><button class="btn wide" data-act="saveproj">Projekt als Datei sichern</button>
+      ${all || S.pages.some(q => q.ocr) ? '<button class="btn wide" data-act="readable">Lesefreundliche Kopie anlegen</button>' : ''}</div></section>`;
+    if (all) h += `<section class="wide-only"><h3>Tastenkürzel</h3><div class="kbd">${TOOLS.map(t => `<b>${t.key.toUpperCase()}</b> ${t.label}`).join(' · ')}<br><b>Strg+C/V</b> kopieren/einfügen · <b>Strg+A</b> alles auf der Seite · <b>Strg+Z</b> rückgängig · <b>Strg+B/I/U</b> beim Schreiben</div></section>`;
     h += `<section><h3>Blattwerk</h3><div class="acts"><button class="btn" data-act="about">Hilfe und Erklärungen</button><button class="btn" data-act="settings">Einstellungen</button></div>
       <p class="mini">Version ${APP_VERSION} · arbeitet vollständig offline. Es werden keine Daten übertragen.</p>
       <div class="links"><a href="datenschutz.html" data-leave="1">Datenschutz</a><a href="impressum.html" data-leave="1">Impressum</a><a href="lizenzen.html" data-leave="1">Lizenzen</a></div></section>`;
   } else {
     h += `<section><h3>Ausgewählt</h3><h2>${TYPE_NAME[o.type] || 'Element'}</h2>${o.fromLine ? '<p class="note">Der Originaltext ist abgedeckt. Löschst du diesen Text, erscheint das Original wieder.</p>' : ''}</section>`;
     h += typePanel(o);
+    /* Lösung eingetragen, aber auf dem Blatt nicht zu sehen? Hinweis statt Rätsel */
+    if (!S.view.sol && (o.type === 'field' || o.type === 'check' || o.type === 'table' || (o.type === 'coord' && (o.funcs || []).some(f => f.sol))))
+      h += `<section><p class="note">Lösungen erscheinen auf dem Blatt in der Ansicht „+ Lösung“ – und im Lösungsblatt.</p><button class="btn" data-act="view-sol">Ansicht „+ Lösung“ zeigen</button></section>`;
     if (o.type !== 'points' && o.type !== 'qr') h += `<section><h3>Ebene</h3>${layerSeg(layerOf(o), 'layer')}</section>`;
     h += `<section><h3>Aktionen</h3><div class="acts">
       ${o.type === 'text' && S.editing !== o.id ? '<button class="btn wide" data-act="edit">Text bearbeiten</button>' : ''}
@@ -2804,7 +2938,7 @@ function renderPanel() {
   const caret = focusId && document.activeElement.selectionStart;
   panel.innerHTML = h; panel.scrollTop = st;
   if (focusId) { const f = document.getElementById(focusId); if (f) { f.focus(); try { if (caret != null) f.setSelectionRange(caret, caret); } catch (e) {} } }
-  updLayerPill();
+  updViewSwitch();
 }
 function typePanel(o) {
   if (o.type === 'text') {
@@ -2954,7 +3088,6 @@ function bgAll() {
 function snapOnce(key) { if (panelSnapFor !== key) { snap(); panelSnapFor = key; } }
 function applyProp(prop, v) {
   if (prop.startsWith('bg.')) return applyBg(prop.slice(3), v);
-  if (prop === 'view.help' || prop === 'view.sol') { S.view[prop.slice(5)] = v; if (selIds().some(id => !visible(find(id)))) setSel(null); renderAll(); return; }
   if (prop === 'snap') { S.snap = v; return; }
   if (/^grade\d$/.test(prop)) { snapOnce('meta' + prop); S.meta.grades = (S.meta.grades || META_DEF().grades).slice(); S.meta.grades[+prop.slice(5)] = v; queueSave(); return; }
   const o = find(S.sel); if (!o || selIds().length !== 1) return;
@@ -3020,7 +3153,6 @@ panel.addEventListener('click', async e => {
   if (b.dataset.eset) { S.eraseSol = JSON.parse(b.dataset.v); renderPanel(); return; }
   if (b.dataset.pref) { P[b.dataset.pref] = JSON.parse(b.dataset.v); savePrefs(); renderPanel(); return; }
   if (b.dataset.fncol != null) { const o = find(S.sel); if (!o || o.type !== 'coord') return; snap(); o.funcs[+b.dataset.fncol].color = b.dataset.v; renderObjs(o.page); renderPanel(); queueSave(); return; }
-  if (b.dataset.newlayer) { S.layer = JSON.parse(b.dataset.v); updLayerPill(); renderPanel(); return; }
   if (b.dataset.run) { applyRunStyle(b.dataset.run); return; }
   if (b.dataset.runc) { applyRunStyle('c', b.dataset.runc); return; }
   if (b.dataset.ins != null) {
@@ -3047,7 +3179,7 @@ panel.addEventListener('click', async e => {
     addpage: addPage, duppage: dupPage, delpage: delPage, pageup: () => movePage(-1), pagedown: () => movePage(1), rotl: () => rotatePage(-1), rotr: () => rotatePage(1),
     pdfpages: () => $('#filePdf').click(), bgall: bgAll,
     export: exportDialog, saveproj: saveProject, evaluate: () => $('#fileEval').click(), readable: readableCopy, horizon: addHorizon,
-    addfont: () => $('#fileFont').click(), about: () => showHome('about'), settings: () => showHome('settings'),
+    addfont: () => $('#fileFont').click(), about: () => showHome('about'), settings: () => showHome('settings'), 'view-sol': () => setView('sol'),
     zin: () => { setZoom(S.zoom * 1.2); renderPanel(); }, zout: () => { setZoom(S.zoom / 1.2); renderPanel(); }, zfit: () => { S.fit = true; applyZoom(); renderPanel(); },
     'tbl-cells': () => { S.tableSol = false; renderPanel(); }, 'tbl-sol': () => { S.tableSol = true; renderPanel(); },
     'tbl-fn': () => tableFromFunction(o),
@@ -3326,6 +3458,7 @@ async function openPdf(bytes, name) {
     try { await DB.putPdf(id + '/' + sid, bytes); } catch (e) { console.error(e); }
     await flushSave();
     toast(`${$('#docName').value} geöffnet · ${pages.length} ${pages.length === 1 ? 'Seite' : 'Seiten'}` + (imp.objs.length ? ` · ${imp.objs.length} Formularfelder übernommen – du kannst jetzt Lösungen eintragen` : '') + (imp.skipped ? ` (${imp.skipped} Schaltflächen/Unterschriftsfelder nicht übernommen)` : ''), null, imp.objs.length ? 8000 : 0);
+    try { if (!localStorage.getItem('bw:tipp-text')) { localStorage.setItem('bw:tipp-text', '1'); toast('Tipp: Text im PDF einfach antippen, um ihn zu ändern.', null, 8000); } } catch (e) {}
   } finally { done(); }
 }
 /* Seiten aus einem weiteren PDF einfügen (auch: zwei PDFs zusammenführen). */
@@ -3628,6 +3761,7 @@ const HICON = {
   open: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v1"/><path d="M3 7v10a2 2 0 002 2h13l3-8H7l-3 8"/>',
   sample: '<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M8 13l2 2 4-4"/>',
   lib: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8M10 12h4"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 018 0V11"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
   back: '<path d="M15 6l-6 6 6 6"/>'
@@ -3681,6 +3815,7 @@ async function homeMainHTML() {
       <button class="home-tile" data-h="lib">${hi('lib')}<div><b>Meine Blätter</b><span>${metas.length} ${metas.length === 1 ? 'Blatt' : 'Blätter'} auf diesem Gerät</span></div></button>
     </div>
     ${recent.length ? `<section class="home-card"><h2>Zuletzt bearbeitet</h2><ul class="home-recent">${recent.map(m => `<li><div class="meta"><div class="nm">${esc(m.name)}</div><div class="sub">${fmtDate(m.updated)} · ${m.npages} ${m.npages === 1 ? 'Seite' : 'Seiten'}</div></div><button class="btn" data-h="recent" data-id="${esc(m.id)}">Öffnen</button></li>`).join('')}</ul></section>` : ''}
+    <p class="home-priv">${hi('lock')}<span><b>Alles bleibt auf diesem Gerät.</b> Kein Konto, keine Cloud, keine Werbung. Auch ausgefüllte Schüler-PDFs werden nur hier ausgewertet – es werden keine Daten übertragen.</span></p>
     <nav class="home-foot"><button class="btn" data-h="settings">${hi('gear')}Einstellungen</button><button class="btn" data-h="about">${hi('info')}Über Blattwerk und Hilfe</button></nav>
   </div>`;
 }
@@ -3696,6 +3831,8 @@ async function settingsHTML() {
   return `<div class="home-in">
     <div class="home-top"><button class="btn" data-h="main">${hi('back')}Zurück</button><h1>Einstellungen</h1></div>
     <section class="home-card"><h2>Allgemein</h2>
+      ${pRow('Werkzeuge', pSeg('mode', [['simple', 'Einfach'], ['all', 'Alle Funktionen']]))}
+      <p class="mini">„Einfach“ zeigt nur die wichtigsten Werkzeuge, die übrigen findest du unter „Mehr“. „Alle Funktionen“ zeigt alles auf einmal, dazu Klassenarbeit, Formular-Werkzeuge und Tastenkürzel.</p>
       ${pRow('Beim Start zeigen', pSeg('start', [['home', 'Startbildschirm'], ['last', 'Zuletzt bearbeitetes Blatt']]))}
       ${pRow('Darstellung', pSeg('theme', [['auto', 'Wie das Gerät'], ['light', 'Hell'], ['dark', 'Dunkel']]))}
     </section>
@@ -3714,8 +3851,7 @@ async function settingsHTML() {
     </section>
     <section class="home-card"><h2>Arbeiten</h2>
       ${pTog('snap', 'Einrasten an Raster und anderen Elementen')}
-      ${pTog('help', 'Hilfen beim Öffnen anzeigen')}
-      ${pTog('sol', 'Lösungen beim Öffnen anzeigen')}
+      ${pRow('Ansicht beim Öffnen', pSeg('view', VIEWS.map(([k, , t]) => [k, t])))}
     </section>
     <section class="home-card"><h2>Neues Blatt</h2>
       ${pRow('Hintergrund', pSeg('bg', BG_TYPES.map(([t, l]) => [t, l])))}
@@ -3735,7 +3871,8 @@ function setPref(key, v) {
   P[key] = v; savePrefs();
   if (key === 'theme') applyTheme();
   if (key === 'snap') S.snap = v;
-  if (key === 'help' || key === 'sol') { S.view[key] = v; renderAll(); }
+  if (key === 'view') setView(v);
+  if (key === 'mode') { buildTools(); if (!selIds().length) renderPanel(); }
 }
 
 /* ---------- Über Blattwerk und Hilfe ---------- */
@@ -3750,11 +3887,12 @@ function aboutHTML() {
     <section class="home-card"><h2>Erklärungen</h2>
       <details open><summary>Erste Schritte</summary><ol>
         <li><b>Neues Blatt</b> anlegen oder ein <b>PDF öffnen</b>. Das Beispielblatt zeigt fast alle Möglichkeiten.</li>
-        <li>Links ein Werkzeug wählen und auf die Seite tippen oder ziehen. Rechts stellst du das gewählte Element ein.</li>
-        <li><b>PDF exportieren</b> oben rechts: Das PDF geht über das Teilen-Menü in „Dateien“, per Mail oder AirDrop. Im Browser landet es im Download-Ordner.</li>
-      </ol><p>Alles wird automatisch unter „Meine Blätter“ gespeichert. Rückgängig und Wiederholen findest du oben.</p></details>
+        <li>Text im PDF ändern: einfach antippen. Für Neues links ein Werkzeug wählen und auf die Seite tippen oder ziehen. Weitere Werkzeuge stecken unter <b>Mehr</b>. Rechts stellst du das gewählte Element ein.</li>
+        <li>Oben wählst du die <b>Ansicht</b>: <b>Arbeitsblatt</b>, <b>+ Hilfen</b> oder <b>+ Lösung</b>. Was du in einer Ansicht hinzufügst, erscheint erst ab dieser Fassung.</li>
+        <li><b>${IS_APP ? 'Teilen' : 'PDF exportieren'}</b> oben rechts: Das PDF geht über das Teilen-Menü in „Dateien“, IServ, per Mail oder AirDrop. Im Browser landet es im Download-Ordner.</li>
+      </ol><p>Alles wird automatisch unter „Meine Blätter“ gespeichert. Rückgängig und Wiederholen findest du oben. Alle Werkzeuge auf einmal zeigt die Einstellung <b>Werkzeuge: Alle Funktionen</b>.</p></details>
       <details><summary>Die Werkzeuge</summary><ul>${tools}</ul></details>
-      <details><summary>Vorhandenes PDF bearbeiten</summary><p>Mit <b>Text ändern</b> tippst du eine Zeile im PDF an. Blattwerk deckt sie ab und setzt sie als bearbeitbaren Text ein, in ähnlicher Schrift und Farbe. Eingescannte Seiten enthalten keine Schrift, nur ein Bild – dafür gibt es die Texterkennung (siehe unten).</p>
+      <details><summary>Vorhandenes PDF bearbeiten</summary><p>Mit <b>Auswählen</b> (oder dem Werkzeug <b>Text ändern</b>, das alle änderbaren Zeilen umrahmt) tippst du eine Zeile im PDF an. Blattwerk deckt sie ab und setzt sie als bearbeitbaren Text ein, in ähnlicher Schrift und Farbe. Eingescannte Seiten enthalten keine Schrift, nur ein Bild – dafür gibt es die Texterkennung (siehe unten).</p>
         <p>Über die Leiste rechts fügst du <b>Seiten aus einem anderen PDF</b> ein, duplizierst oder drehst Seiten. Mit <b>Ausschnitt</b> schneidest du einen Bereich aus einem PDF aus, etwa eine Aufgabe aus dem Schulbuch, und setzt ihn als Bild ein. Trägst du dabei die <b>Quelle</b> ein, steht sie klein unter dem Bild, auf Wunsch mit Seitenzahl.</p></details>
       <details><summary>Texterkennung: Scans und Fotos</summary><p>Bei eingescannten Seiten und Fotos ist der Text nur ein Bild. Tippe in der Leiste rechts auf <b>Text erkennen</b> (bei Bildern: „Text im Bild erkennen“). Das dauert pro Seite ein paar Sekunden und geschieht vollständig auf diesem Gerät.</p>
         <p>Danach kannst du mit <b>Text ändern</b> jede erkannte Zeile antippen und umschreiben, mit <b>Entfernen</b> Zeilen löschen, und im exportierten PDF ist der Text <b>durchsuchbar, kopierbar und vorlesbar</b> (wichtig für Vorlese-Funktionen bei Leseschwierigkeiten). Die <b>lesefreundliche Kopie</b> macht aus dem Scan echten, größeren Text; Abbildungen bleiben als Bild erhalten.</p>
@@ -3767,7 +3905,7 @@ function aboutHTML() {
         <p>Für Rechnungen mit dem Stift eignen sich Rechenkästchen oder ein Kästchen-Hintergrund: Schüler schreiben dort mit ihrer PDF-App von Hand.</p></details>
       <details><summary>Vorlagen und Verlagsmaterial</summary><p><b>Entfernen</b>: Text oder Bild im PDF antippen, oder einen Rahmen um Teile ziehen. Beim Export wird der Inhalt wirklich gelöscht – auch kopieren lässt er sich danach nicht mehr. Bei „nur für Schüler“ bleibt er im Lösungsblatt sichtbar: So wird aus einem PDF mit Lösungen ein Arbeitsblatt plus Lösungsblatt.</p>
         <p><b>Lücken als Felder erkennen</b> (rechts bei der Seite) setzt ausfüllbare Felder auf Unterstriche, Punkt- und Schreiblinien und leere Kästchen. Hat ein PDF schon Formularfelder, übernimmt Blattwerk sie beim Öffnen; dann kannst du Lösungen eintragen und auswerten.</p></details>
-      <details><summary>Ebenen: ein Blatt, drei Fassungen</summary><p>Jedes Element liegt auf einer Ebene: <b>Grundblatt</b>, <b>Hilfe</b> oder <b>Lösung</b>. Oben neben dem Blattnamen siehst du, auf welcher Ebene neue Elemente landen; antippen wechselt sie.</p>
+      <details><summary>Ansichten: ein Blatt, drei Fassungen</summary><p>Oben neben dem Blattnamen wählst du die Ansicht: <b>Arbeitsblatt</b> zeigt, was alle bekommen. <b>+ Hilfen</b> zeigt zusätzlich die Hilfen, <b>+ Lösung</b> alles. Was du in einer Ansicht neu hinzufügst, landet auf deren Ebene – Hilfen also in „+ Hilfen“, Lösungen in „+ Lösung“ (dort automatisch rot). Ausnahme: <b>Textfelder, Ankreuzkästchen, Tabellen, Punkte und QR-Codes</b> gehören immer zum Arbeitsblatt; ihre Lösung trägst du rechts beim Element ein. Ein gewähltes Element verschiebst du rechts unter „Ebene“.</p>
         <p>Beim Export wählst du: <b>Schülerfassung</b> (nur Grundblatt, ausfüllbar), <b>mit Hilfen</b> (für Schüler, die Unterstützung brauchen) und <b>Lösungsblatt</b> (alles, Lösungen rot eingetragen). Ein <b>QR-Code</b> mit den Lösungen der Seite erlaubt Selbstkontrolle mit jeder Kamera-App, ohne Internet.</p></details>
       <details><summary>Mathematik: Formeln, Graphen, Formen</summary><p><b>Formel</b>: Brüche, Wurzeln, Potenzen, Indizes, Strecken und Vektoren über die Knöpfe rechts. Buchstaben erscheinen kursiv wie im Schulbuch.</p>
         <p><b>Koordinaten</b>: Bereich, Einheit (z. B. 1 cm), Kästchen, Funktionsgraphen in Heftschreibweise (0,5x + 2, x², sqrt(x), |x|) mit eigener Farbe, gestrichelt oder nur im Lösungsblatt, dazu Punkte wie A(1|3).</p>
@@ -3804,7 +3942,7 @@ homeEl.addEventListener('click', async e => {
     }
     case 'reset':
       if (await ask('Alle Einstellungen auf die Vorgaben zurücksetzen? Deine Blätter bleiben erhalten.', 'Zurücksetzen')) {
-        Object.assign(P, JSON.parse(JSON.stringify(PREF_DEF))); savePrefs(); applyTheme(); S.snap = P.snap; renderHome();
+        Object.assign(P, JSON.parse(JSON.stringify(PREF_DEF))); savePrefs(); applyTheme(); S.snap = P.snap; buildTools(); renderHome();
       }
       break;
   }
@@ -4646,8 +4784,8 @@ async function ocrPages(pids, opts = {}) {
   queueSave(); renderPanel();
   [...new Set(results.map(([c]) => c.pid))].forEach(pid => renderLines(pid));
   if (!nl) { toast('Es wurde kein Text gefunden. Ist das Bild scharf und nicht zu klein?', null, 7000); return; }
-  toast(`${nl} Zeile${nl === 1 ? '' : 'n'} erkannt${nlow ? `, ${nlow} Wort${nlow === 1 ? '' : 'e'} unsicher` : ''}. Im exportierten PDF ist der Text jetzt durchsuchbar und vorlesbar.`,
-    S.tool === 'edittext' ? null : [['Text ändern', () => setTool('edittext')]], 10000);
+  toast(`${nl} Zeile${nl === 1 ? '' : 'n'} erkannt${nlow ? `, ${nlow} Wort${nlow === 1 ? '' : 'e'} unsicher` : ''}. Zum Ändern eine Zeile antippen (Text auf Fotos: „Zeilen zeigen“). Im exportierten PDF ist der Text jetzt durchsuchbar und vorlesbar.`,
+    S.tool === 'edittext' ? null : [['Zeilen zeigen', () => setTool('edittext')]], 10000);
 }
 function ocrDiscard(c) {
   snap();
@@ -4869,7 +5007,7 @@ function ocrPanel(p) {
   const todo = (scan && !p.ocr ? 1 : 0) + imgs.filter(o => !(o.ocr && o.ocr.img === o.img)).length;
   const more = S.pages.filter(q => q.id !== p.id && (q.sid != null || S.objs.some(o => o.page === q.id && o.type === 'image'))).length;
   return `<h3>Text erkennen</h3>
-    ${done.length ? `<p class="mini">${ocrStatTxt(st)} Mit „Text ändern“ bearbeiten; im PDF durchsuchbar und vorlesbar.</p>` : `<p class="mini">${scan ? 'Diese Seite ist ein Scan: Der Text ist nur ein Bild.' : 'Auf dieser Seite ist ein Foto oder Bild.'} Blattwerk kann den Text darin erkennen – offline, auf diesem Gerät.</p>`}
+    ${done.length ? `<p class="mini">${ocrStatTxt(st)} Zeile antippen zum Bearbeiten (Text auf Fotos: Werkzeug „Text ändern“); im PDF durchsuchbar und vorlesbar.</p>` : `<p class="mini">${scan ? 'Diese Seite ist ein Scan: Der Text ist nur ein Bild.' : 'Auf dieser Seite ist ein Foto oder Bild.'} Blattwerk kann den Text darin erkennen – offline, auf diesem Gerät.</p>`}
     <div class="acts">${todo ? `<button class="btn primary" data-act="ocr">Text erkennen</button>` : ''}${more ? `<button class="btn" data-act="ocr-all">Auf allen Seiten</button>` : ''}
     ${done.length ? `<button class="btn" data-act="ocr-redo">Neu erkennen</button><button class="btn" data-act="ocr-drop">Verwerfen</button>` : ''}</div>`;
 }
@@ -4976,7 +5114,7 @@ function dropWidgetAnnots(page) {
 
 /* ======================================================================
    PDF-Export
-   Fassungen: student (Grundblatt), help (mit Hilfen), solution (alles,
+   Fassungen: student (Arbeitsblatt/Grundebene), help (mit Hilfen), solution (alles,
    Felder und Kästchen statisch mit roten Lösungen).
    ====================================================================== */
 async function buildPdf(opts = {}) {
@@ -5399,13 +5537,13 @@ function exportDialog() {
   if (!PL) { toast('Die PDF-Bibliothek fehlt. Bitte die App neu starten.'); return; }
   const hasHelp = S.objs.some(o => layerOf(o) === 'help'), hasSol = hasSolutions(), chk = formCheck();
   if (!hasHelp && !hasSol && !chk.warn.length) return runExport(['student']);
-  const d = openDialog(`<h2 class="dh">PDF exportieren</h2>
+  const d = openDialog(`<h2 class="dh">${esc(exportLabel())}</h2>
     ${issuesHTML({ warn: chk.warn, info: [] })}
     <p class="dnote">Aus demselben Blatt entstehen getrennte Dateien.</p>
     <label class="tg"><input type="checkbox" data-v="student" checked>Schülerfassung – ausfüllbar, ohne Hilfen und Lösungen</label>
     <label class="tg"><input type="checkbox" data-v="help" ${hasHelp ? 'checked' : 'disabled'}>Mit Hilfen – ausfüllbar${hasHelp ? '' : ' (keine Hilfen auf dem Blatt)'}</label>
     <label class="tg"><input type="checkbox" data-v="solution" ${hasSol ? 'checked' : 'disabled'}>Lösungsblatt – Lösungen rot eingetragen${hasSol ? '' : ' (keine Lösungen hinterlegt)'}</label>
-    <div class="row end"><button class="btn" data-r="0">Abbrechen</button><button class="btn primary" data-r="1">Exportieren</button></div>`, 'wide');
+    <div class="row end"><button class="btn" data-r="0">Abbrechen</button><button class="btn primary" data-r="1">${IS_APP ? 'Teilen' : 'Exportieren'}</button></div>`, 'wide');
   d.addEventListener('click', e => {
     const r = e.target.closest('[data-r]'); if (!r && e.target !== d) return;
     const vs = [...d.querySelectorAll('input[data-v]:checked')].map(i => i.dataset.v);
@@ -5930,7 +6068,8 @@ $('#fileEval').onchange = e => { const fs = [...e.target.files]; e.target.value 
 $('#fileFont').onchange = e => { const f = e.target.files[0]; e.target.value = ''; addFontFile(f); };
 $('#btnUndo').onclick = undo; $('#btnRedo').onclick = redo;
 $('#btnExport').onclick = exportDialog;
-$('#layerPill').onclick = () => { const i = LAYERS.findIndex(l => l[0] === S.layer); S.layer = LAYERS[(i + 1) % LAYERS.length][0]; updLayerPill(); if (!selIds().length) renderPanel(); toast('Neue Elemente landen jetzt auf: ' + LAYERS.find(l => l[0] === S.layer)[1]); };
+$('#viewSeg').onclick = e => { const b = e.target.closest('[data-vm]'); if (b) setView(b.dataset.vm); };
+$('#viewSel').onchange = e => setView(e.target.value);
 $('#zIn').onclick = () => setZoom(S.zoom * 1.2); $('#zOut').onclick = () => setZoom(S.zoom / 1.2);
 $('#zFit').onclick = () => { S.fit = true; applyZoom(); };
 $('#btnPanel').onclick = () => { S.panelOpen = !S.panelOpen; if (!S.panelOpen && selIds().length) select(null); syncPanelOpen(); renderPanel(); };
@@ -6002,6 +6141,9 @@ async function boot() {
   S.booting = true;
   buildTools();
   setTool('select');
+  updViewSwitch();
+  const xb = $('#btnExport'); xb.querySelector('.lb').textContent = exportLabel();
+  if (IS_APP) { xb.title = 'Als PDF teilen: in IServ, Mail, Dateien, Drucken …'; xb.querySelector('svg').innerHTML = '<path d="M12 15V3M7.5 7.5L12 3l4.5 4.5"/><path d="M8 11H6a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2v-6a2 2 0 00-2-2h-2"/>'; }
   await loadFonts();
   if (!pdfjs || !PL) toast('Die PDF-Bibliotheken fehlen. Bitte die App neu installieren.', null, 10000);
   if (!window.fontkit || !FKS['NotoSans-Regular']) toast('Die eingebauten Schriften ließen sich nicht laden. Der PDF-Export nutzt Ersatzschriften.', null, 8000);
@@ -6024,7 +6166,7 @@ window.__bw = { S, DB, usedImgs, ocrPages, ocrLines, ocrWords, ocrTargets, ocrPa
   compileExpr, parseMath, layoutText, textWidth, cleanState, loadProject, projectJSON, insertPdfPages, rotatePage, selectIds, copySel, pasteClip, undo, redo, snap, renderAll,
   createAt, createRect, applyRunStyle, startEdit, endEdit, find, examStats, openStored, newSheet, exportDialog, runExport, evalCSV, fixTable, fixCoord,
   P, savePrefs, showHome, hideHome, homeVisible, detectFields, eraseKeys, eraseItems, eraseRect, ensureGfx, prepareErase, splitPageAt, setSplitMode,
-  formCheck, correctedPdfs, fieldType, renderObjs, renderLines, setTool };
+  formCheck, correctedPdfs, fieldType, renderObjs, renderLines, setTool, setView, toggleMoreTools, lineAt, buildTools, offerOcr };
 })();
 </script>
 </body>

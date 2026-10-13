@@ -1,4 +1,4 @@
-# Blattwerk – Projektwissen, Stand 1.1.0
+# Blattwerk – Projektwissen, Stand 1.2.0
 
 PDF-Editor für Arbeitsblätter (Lehrkräfte), iOS und Android über Cordova,
 gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
@@ -55,17 +55,57 @@ gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
 - Startbildschirm `#home` liegt über dem Editor; das letzte Blatt ist dahinter
   geladen. `resetDoc()` blendet ihn aus (außer beim Start, `S.booting`)
 
+## Bedienkonzept (seit 1.2.0)
+
+- `P.mode` = `simple|all` (Vorgabe `simple`). Einfach: Leiste zeigt nur
+  `CORE_TOOLS` (Auswählen, Text, Markieren, Entfernen, Bild, Textfeld) und
+  „Mehr“ (`#toolsMore`, `toggleMoreTools()`); übrige Werkzeuge haben die Klasse
+  `extra`. Tastenkürzel gelten immer für alle Werkzeuge. Das Seitenpanel
+  zeigt Klassenarbeit, Formular-Werkzeuge und Tastenkürzel nur bei `all` oder
+  wenn sie gebraucht werden (Punkte bzw. Felder vorhanden)
+- Ansicht = Fassung: `setView(base|help|sol)` setzt `S.view` **und** `S.layer`
+  (neue Elemente landen auf der Ebene der Ansicht). Kopfzeile: `#viewSeg`
+  (breit) bzw. `#viewSel` (schmal). `P.view` = Ansicht beim Öffnen (Vorgabe
+  `base`); `P.help`/`P.sol` gibt es nicht mehr. `setLayer()` wechselt die
+  Ansicht mit, wenn ein Element sonst unsichtbar würde (ebenso beim Einfügen).
+  Ausnahme `BASE_TYPES` (Feld, Kästchen, Tabelle, Punkte, QR): entstehen immer
+  auf `base`, die Lösung steckt im Element. Ist ein solches Element gewählt und
+  die Lösung nicht sichtbar, zeigt das Panel einen Hinweis (`view-sol`)
+- Text direkt antippen: Im Werkzeug „Auswählen“ wandelt ein Tipp auf PDF- oder
+  erkannten Text (`lineAt()`) die Zeile um – nur wenn nichts ausgewählt ist,
+  sonst hebt der erste Tipp die Auswahl auf. `buildPages()` liest die Zeilen
+  aller PDF-Seiten nacheinander im Hintergrund; ist eine Seite noch nicht
+  gelesen, wird der Tipp nachgeholt (`act: 'pending'`, nur bei echtem Tipp,
+  nicht beim Wischen). Maus: Rahmenauswahl darf auf Text beginnen, ein kurzer
+  Klick ändert den Text; Textcursor über Zeilen (`.page.over-text`).
+  Text auf Bildern (Fotos) bleibt über „Text ändern“ erreichbar, weil ein Tipp
+  dort das Bild wählt. „Text ändern“ steht unter „Mehr“
+- Finger/Stift: Bei Tipp-Gesten auf der Seite ruft `pointerdown`
+  `preventDefault()` auf (`noCompat`) – sonst landet das nachgeschobene
+  mousedown im Panel, das sich schmal gerade unter dem Finger öffnet, und der
+  neue Text verliert den Fokus. Fokus in Eingabefeldern außerhalb der Seite wird
+  dabei selbst aufgehoben
+- Tipp auf Scan ohne Text: `offerOcr()` bietet die Erkennung einmal je Seite an
+- Seiten mit `layer: 'sol'` außerhalb von „+ Lösung“: `.pwrap.off` (blass)
+- Kopfzeile: ≤ 1320 px nur Symbole bei Neu/Meine Blätter, ≤ 1060 px auch beim
+  Export, ≤ 720 px Ansicht als `<select>`, ≤ 560 px ohne Neu/Meine Blätter
+- Ein Knopf für die Ausgabe: `exportLabel()` – in der App „Teilen“, im Browser
+  „PDF exportieren“; der doppelte Export-Knopf im Panel entfällt
+- Startbildschirm: Datenschutz-Hinweis (`.home-priv`)
+- Bedientest mit Referendaren: `BEDIENTEST.md`
+
 ## Kennungen
 
 - Paket/Bundle: `de.blattwerk.app`
-- Version 1.1.0, Code 10100 (Major*10000 + Minor*100 + Patch)
+- Version 1.2.0, Code 10200 (Major*10000 + Minor*100 + Patch)
 - Secrets wie FairMix; Zertifikat und ASC-Schlüssel wiederverwendbar,
   Profil und Android-Keystore neu
 
 ## Prüfkette
 
-    node validate.js       (16 Prüfgruppen)
-    node smoketest.js      (193 Prüfungen, Playwright + pdftoppm + qpdf + jsQR)
+    node validate.js       (17 Prüfgruppen)
+    node smoketest.js      (270 Prüfungen, Playwright + pdftoppm + qpdf + jsQR; Abschnitt „iPad mit Finger“
+                            spielt die drei Aufgaben aus BEDIENTEST.md mit Touch durch)
 
 Chromium braucht eine UTF-8-Locale, sonst heißen Downloads mit Umlaut
 „download“ (smoketest.js setzt `LANG=C.UTF-8`).

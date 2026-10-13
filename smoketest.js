@@ -129,6 +129,9 @@ async function main() {
   const browser = await chromium.launch({ env: Object.assign({}, process.env, { LANG: 'C.UTF-8', LC_ALL: 'C.UTF-8' }) });
   const ctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
   const page = await ctx.newPage();
+  /* Die Abläufe unten tippen jedes Werkzeug direkt in der Leiste an: dafür
+     „Alle Funktionen“. Die einfache Leiste prüft Abschnitt „Einfache Bedienung“. */
+  await page.addInitScript(() => { try { if (!localStorage.getItem('bw:prefs')) localStorage.setItem('bw:prefs', JSON.stringify({ mode: 'all' })); } catch (e) {} });
   const errs = [];
   page.on('pageerror', e => errs.push('Seitenfehler: ' + e.message));
   page.on('console', m => { if (m.type() === 'error') errs.push('Konsole: ' + m.text()); });
@@ -137,24 +140,24 @@ async function main() {
   const sel = () => S('S.objs.find(o => o.id === S.sel)');
   /* Downloads einsammeln: Export ohne Dialog (eine Datei) oder mit Fassungswahl */
   const variantOf = n => / - Lösung\.pdf$/.test(n) ? 'solution' : / - mit Hilfen\.pdf$/.test(n) ? 'help' : 'student';
-  async function exportFiles(prefix, want) {
+  async function exportFiles(prefix, want, pg = page) {
     const got = [], onDl = d => got.push(d);
-    page.on('download', onDl);
-    await page.click('#btnExport');
-    const dlg = await page.waitForSelector('.dlg input[data-v]', { timeout: 1500 }).catch(() => null);
+    pg.on('download', onDl);
+    await pg.click('#btnExport');
+    const dlg = await pg.waitForSelector('.dlg input[data-v]', { timeout: 1500 }).catch(() => null);
     let n = 1;
     if (dlg) {
       n = 0;
       for (const v of ['student', 'help', 'solution']) {
-        const cb = page.locator(`.dlg input[data-v="${v}"]`);
+        const cb = pg.locator(`.dlg input[data-v="${v}"]`);
         const on = want.includes(v) && await cb.isEnabled();
         if (await cb.isEnabled()) await cb.setChecked(on);
         if (on) n++;
       }
-      await page.click('.dlg [data-r="1"]');
+      await pg.click('.dlg [data-r="1"]');
     }
-    const t0 = Date.now(); while (got.length < n && Date.now() - t0 < 40000) await page.waitForTimeout(100);
-    page.off('download', onDl);
+    const t0 = Date.now(); while (got.length < n && Date.now() - t0 < 40000) await pg.waitForTimeout(100);
+    pg.off('download', onDl);
     const files = { dialog: !!dlg };
     if (process.env.BW_DEBUG) console.log(got.map(d => JSON.stringify(d.suggestedFilename())));
     for (const d of got) { const f = path.join(OUT, prefix + '-' + variantOf(d.suggestedFilename()) + '.pdf'); await d.saveAs(f); files[variantOf(d.suggestedFilename())] = f; }
@@ -189,7 +192,7 @@ async function main() {
     (await page.locator('#home [data-h="new"], #home [data-h="open"], #home [data-h="sample"], #home [data-h="lib"], #home [data-h="settings"], #home [data-h="about"]').count()) === 6);
   check('Erster Start: kein „Weiterarbeiten“', (await page.locator('#home [data-h="continue"]').count()) === 0);
   await page.click('#home [data-h="about"]');
-  check('Über Blattwerk: Erklärungen zu allen Bereichen', (await page.locator('#home details').count()) >= 9 && /Ausgefüllte PDFs auswerten/.test(await page.textContent('#home')) && /Version 1\.1/.test(await page.textContent('#home')));
+  check('Über Blattwerk: Erklärungen zu allen Bereichen', (await page.locator('#home details').count()) >= 9 && /Ausgefüllte PDFs auswerten/.test(await page.textContent('#home')) && /Version 1\.2/.test(await page.textContent('#home')));
   await page.keyboard.press('Escape');
   await page.waitForSelector('#home [data-h="sample"]', { timeout: 3000 }).catch(() => {});
   check('Escape führt zurück zum Startbildschirm', (await page.locator('#home [data-h="sample"]').count()) === 1);
@@ -473,11 +476,13 @@ async function main() {
   await clickAt(400, 300);
   await page.click(`#panel button[data-layer="layer"][data-v='"help"']`);
   check('Formel auf Hilfe-Ebene verschoben', (await S(`B.find('${fid}').layer`)) === 'help');
+  check('Verschieben auf ausgeblendete Ebene wechselt die Ansicht mit', (await S(`S.layer === 'help' && S.view.help`)) && (await page.locator(`.obj[data-id="${fid}"]`).count()) === 1);
   await key('Escape');
-  await page.uncheck('#p-view\\.help');
-  check('Hilfen ausblenden versteckt die Formel', (await page.locator(`.obj[data-id="${fid}"]`).count()) === 0);
-  await page.check('#p-view\\.help');
-  check('Hilfen einblenden zeigt sie wieder', (await page.locator(`.obj[data-id="${fid}"]`).count()) === 1);
+  await page.click('#viewSeg [data-vm="base"]');
+  check('Ansicht „Arbeitsblatt“ versteckt die Hilfe', (await page.locator(`.obj[data-id="${fid}"]`).count()) === 0);
+  await page.click('#viewSeg [data-vm="help"]');
+  check('Ansicht „+ Hilfen“ zeigt sie wieder', (await page.locator(`.obj[data-id="${fid}"]`).count()) === 1);
+  await page.click('#viewSeg [data-vm="base"]');
 
   /* Seite drehen: Elemente wandern mit und bleiben auf der Seite */
   await key('Escape');
@@ -729,6 +734,11 @@ async function main() {
   await page.keyboard.press('Escape');
   await page.click('#panel [data-act="horizon"]');
   check('Erneut erzeugen ersetzt die alte Seite', (await S('S.pages.length')) === 2);
+  await page.click('#viewSeg [data-vm="base"]');
+  check('Ansicht „Arbeitsblatt“: Seite nur fürs Lösungsblatt ist blass markiert', await page.evaluate(() => document.querySelectorAll('.pwrap')[1].classList.contains('off') && !document.querySelectorAll('.pwrap')[0].classList.contains('off')));
+  await page.click('#viewSeg [data-vm="sol"]');
+  check('Ansicht „+ Lösung“: dieselbe Seite normal', await page.evaluate(() => !document.querySelectorAll('.pwrap')[1].classList.contains('off')));
+  await page.click('#viewSeg [data-vm="base"]');
   ex = await exportFiles('klassenarbeit', ['student', 'solution']);
   {
     const ps = await PDFDocument.load(fs.readFileSync(ex.student)), pl = await PDFDocument.load(fs.readFileSync(ex.solution));
@@ -1203,6 +1213,61 @@ async function main() {
       (await lp.evaluate(() => window.__bw.S.objs[1].text)) === 'Gespeichert ohne IndexedDB');
     await ctx2.close();
   }
+  /* ================================================================ */
+  section('Einfache Bedienung: wenige Werkzeuge, Text antippen, Ansicht = Fassung');
+  await page.evaluate(() => { const B = window.__bw; B.P.mode = 'simple'; B.savePrefs(); B.buildTools(); B.setTool('select'); });
+  const visTools = async () => page.evaluate(() => [...document.querySelectorAll('#tools [data-tool]')].filter(b => b.offsetParent).map(b => b.dataset.tool).join(','));
+  check('Einfach: nur sechs Grundwerkzeuge plus „Mehr“', (await visTools()) === 'select,text,highlight,erase,image,field' && await page.isVisible('#toolsMore'), await visTools());
+  await page.click('#toolsMore');
+  check('„Mehr“ klappt alle übrigen Werkzeuge auf', (await visTools()).split(',').length === 17);
+  await page.click('[data-tool="coord"]');
+  check('Werkzeug aus „Mehr“ gewählt: Leiste klappt zu, gewähltes bleibt sichtbar', (await visTools()) === 'select,text,highlight,erase,image,field,coord' && (await S('S.tool')) === 'coord', await visTools());
+  await key('v');
+  await page.setInputFiles('#fileOpen', fix);
+  await page.waitForFunction(() => window.__bw.S.pages.length === 3 && window.__bw.S.objs.length === 0, null, { timeout: 15000 });
+  await page.waitForTimeout(200);
+  check('Einfach: Klassenarbeit, Formular-Werkzeuge und Tastenkürzel nicht im Seitenpanel', !/Tastenkürzel|Klassenarbeit|Formular prüfen/.test(await page.textContent('#panel')));
+  await page.waitForFunction(() => window.__bw.S.pages.every(p => window.__bw.S.lines[p.id] && window.__bw.S.lines[p.id].list), null, { timeout: 5000 }).catch(() => {});
+  check('Zeilen aller PDF-Seiten werden im Hintergrund gelesen', await S(`S.pages.every(p => S.lines[p.id] && S.lines[p.id].list) && S.lines[S.pages[2].id].list.length > 0`));
+  const ln0 = await S(`(() => { const L = S.lines[S.pages[0].id].list.find(l => /Aufgabe 2/.test(l.str)); return { x: L.x + 20, y: L.base - L.fs * 0.3, k: L.k }; })()`);
+  await clickAt(ln0.x, ln0.y);
+  await page.waitForTimeout(200);
+  check('Auswählen: Text im PDF antippen macht ihn bearbeitbar', (await S(`(() => { const o = S.objs.find(o => o.fromLine === '${ln0.k}'); return !!o && S.editing === o.id; })()`)));
+  await page.keyboard.press('End'); await page.keyboard.type(' ok'); await key('Escape');
+  check('Direkt geänderter Text übernommen', /ok$/.test(await S(`S.objs.find(o => o.fromLine === '${ln0.k}').text`)));
+  /* Zeilen einer Seite noch nicht gelesen: Der Tipp wird nachgeholt */
+  const ln2 = await S(`(() => { const p = S.pages[2], L = S.lines[p.id].list[0]; delete S.lines[p.id]; return { x: L.x + 10, y: L.base - L.fs * 0.3, k: L.k, pid: p.id }; })()`);
+  await key('Escape'); await page.evaluate(() => window.__bw.selectIds([]));
+  await clickAt(ln2.x, ln2.y, 2); await page.waitForTimeout(400);
+  check('Tipp auf noch nicht gelesene Seite ändert den Text trotzdem', await S(`S.objs.some(o => o.page === '${ln2.pid}' && o.fromLine === '${ln2.k}')`));
+  await key('Escape'); await page.evaluate(() => window.__bw.selectIds([]));
+  /* Maus: Rahmen ziehen, der auf Text beginnt, wählt weiterhin aus */
+  const before = await S('S.objs.length');
+  await dragPt(ln0.x - 30, ln0.y - 40, ln0.x + 400, ln0.y + 10);
+  check('Maus: Rahmenauswahl ab einer Textzeile wandelt nichts um', (await S('S.objs.length')) === before && (await S('S.multi.length || (S.sel ? 1 : 0)')) >= 1, await S('S.objs.length') + '/' + before);
+  await key('Escape'); await page.evaluate(() => window.__bw.selectIds([]));
+  await page.click('#viewSeg [data-vm="sol"]');
+  check('Ansicht „+ Lösung“: Hilfen und Lösungen sichtbar, Neues auf Lösungsebene', (await S(`S.layer === 'sol' && S.view.help && S.view.sol`)));
+  await key('t'); await clickAt(300, 400); await page.keyboard.type('Lösung 42'); await key('Escape');
+  const solTxt = await S(`S.objs.find(o => o.text === 'Lösung 42')`);
+  check('Text in „+ Lösung“ landet rot auf der Lösungsebene', solTxt && solTxt.layer === 'sol' && solTxt.color === '#c62828', JSON.stringify(solTxt && { l: solTxt.layer, c: solTxt.color }));
+  await key('f'); await dragPt(300, 470, 420, 492);
+  const fld = await sel();
+  check('Textfeld in „+ Lösung“ gehört trotzdem zum Arbeitsblatt', fld && fld.type === 'field' && fld.layer === 'base', fld && fld.layer);
+  await page.click('#viewSeg [data-vm="base"]');
+  check('Ansicht „Arbeitsblatt“ blendet die Lösung aus', (await S(`!S.view.help && !S.view.sol && S.layer === 'base'`)) && (await page.locator(`.obj[data-id="${solTxt.id}"]`).count()) === 0);
+  await page.evaluate(id => window.__bw.selectIds([id]), fld.id);
+  check('Feld gewählt in „Arbeitsblatt“: Hinweis, wo die Lösung zu sehen ist', await page.isVisible('#panel [data-act="view-sol"]'));
+  await page.click('#panel [data-act="view-sol"]');
+  check('Hinweis-Knopf wechselt zu „+ Lösung“, Auswahl bleibt', (await S(`S.layer === 'sol' && S.sel === '${fld.id}'`)) && !(await page.isVisible('#panel [data-act="view-sol"]')));
+  await key('Escape'); await page.click('#viewSeg [data-vm="base"]');
+  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(250);
+  await page.selectOption('#viewSel', 'help');
+  check('iPhone-Breite: Ansicht als Auswahlliste', (await page.isVisible('#viewSel')) && !(await page.isVisible('#viewSeg')) && (await S(`S.layer`)) === 'help');
+  await page.selectOption('#viewSel', 'base');
+  await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(250);
+  await page.evaluate(() => { const B = window.__bw; B.P.mode = 'all'; B.savePrefs(); B.buildTools(); });
+
   /* Einstellungen und Farben der Werkzeuge */
   await page.evaluate(() => window.__bw.flushSave());
   await page.reload(); await page.waitForSelector('html[data-ready="1"]');
@@ -1232,6 +1297,7 @@ async function main() {
   await page.click('#btnHome'); await page.click('#home [data-h="settings"]');
   await page.click('#home [data-h="reset"]'); await page.click('.dlg [data-r="1"]');
   check('Einstellungen zurücksetzen', (await page.evaluate(() => window.__bw.P.textColor === '#000000' && window.__bw.P.start === 'home' && !document.documentElement.dataset.theme)));
+  check('Nach dem Zurücksetzen: einfache Werkzeugleiste sofort aktiv', await page.evaluate(() => window.__bw.P.mode === 'simple' && !!document.getElementById('toolsMore')));
   await page.evaluate(() => window.__bw.hideHome());
   const z0 = await S('S.zoom');
   await page.evaluate(() => {
@@ -1255,6 +1321,97 @@ async function main() {
   await page.keyboard.press('Escape');
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.screenshot({ path: path.join(OUT, 'iphone-dunkel.png') });
+
+  /* ================================================================ */
+  section('iPad mit Finger, Grundeinstellungen: die drei Aufgaben aus BEDIENTEST.md');
+  {
+    const tctx = await browser.newContext({ viewport: { width: 820, height: 1180 }, hasTouch: true, acceptDownloads: true });
+    const tp = await tctx.newPage();
+    tp.on('pageerror', e => errs.push('iPad-Seitenfehler: ' + e.message));
+    tp.on('console', m => { if (m.type() === 'error') errs.push('iPad-Konsole: ' + m.text()); });
+    const TS = expr => tp.evaluate(`(() => { const S = window.__bw.S, B = window.__bw; return (${expr}); })()`);
+    /* Finger auf einen Punkt der Seite (pt) */
+    const tap = async (x, y, i = 0) => {
+      await tp.evaluate(([y, i]) => { const st = document.getElementById('stage'), pg = document.querySelectorAll('.page')[i]; const r = pg.getBoundingClientRect(), sr = st.getBoundingClientRect(); st.scrollTop += r.top + y * window.__bw.S.zoom - (sr.top + sr.height / 2); }, [y, i]);
+      await tp.waitForTimeout(80);
+      const b = await tp.locator('.page').nth(i).boundingBox(), z = await TS('S.zoom');
+      await tp.touchscreen.tap(b.x + x * z, b.y + y * z); await tp.waitForTimeout(300);
+    };
+    const tapEl = async sel => { await tp.locator(sel).tap(); await tp.waitForTimeout(150); };
+    await tp.goto(base); await tp.waitForSelector('html[data-ready="1"]', { timeout: 20000 });
+    check('iPad: neue Installation startet „Einfach“ und in Ansicht „Arbeitsblatt“', await TS(`B.P.mode === 'simple' && S.layer === 'base' && !!document.getElementById('toolsMore')`));
+    await tp.evaluate(() => window.__bw.hideHome());
+    check('iPad hochkant: Ansicht als Knopfreihe, Neu und Meine Blätter sichtbar', (await tp.isVisible('#viewSeg')) && (await tp.isVisible('#btnNew')) && (await tp.isVisible('#btnOpen')));
+    check('iPad hochkant: kein seitliches Scrollen, alle Grundwerkzeuge und „Mehr“ sichtbar', (await tp.evaluate(() => document.documentElement.scrollWidth <= innerWidth)) &&
+      (await tp.evaluate(() => [...document.querySelectorAll('#tools .tool')].filter(b => b.offsetParent).every(b => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth; }))) && (await tp.isVisible('#toolsMore')));
+
+    /* Aufgabe 1: Zahl ändern, Aufgabe löschen, teilen */
+    await tp.setInputFiles('#fileOpen', fix);
+    await tp.waitForFunction(() => window.__bw.S.pages.length === 3, null, { timeout: 15000 });
+    await tap(100, 148);   /* „Aufgabe 2: Loese die Gleichung 3x + 4 = 19.“ – sofort nach dem Öffnen */
+    await tp.waitForTimeout(400);
+    const ed = await TS(`(() => { const o = S.objs.find(o => o.fromLine && /Aufgabe 2/.test(o.text)); return o ? { id: o.id, editing: S.editing === o.id } : null; })()`);
+    check('Aufgabe 1: Finger auf Textzeile (gleich nach dem Öffnen) → Zeile bearbeitbar', !!(ed && ed.editing), JSON.stringify(ed));
+    await tp.keyboard.press('End'); for (let i = 0; i < 3; i++) await tp.keyboard.press('Backspace'); await tp.keyboard.type('25.');
+    await tap(300, 700);
+    check('Aufgabe 1: Tipp daneben beendet das Bearbeiten, nichts weiter umgewandelt', (await TS(`!S.editing && !S.sel && S.objs.filter(o => o.fromLine).length === 1`)) && /= 25\.$/.test(await TS(`B.find('${ed && ed.id}').text`)));
+    await tapEl('[data-tool="erase"]');
+    await tap(100, 118);   /* „Aufgabe 1: …“ entfernen */
+    check('Aufgabe 1: „Entfernen“ mit dem Finger', await TS(`S.objs.some(o => o.type === 'whiteout' && o.erase)`));
+    await tapEl('[data-tool="select"]');
+    let tx = await exportFiles('ipad-aufgabe1', ['student'], tp);
+    const t1 = tx.student ? (await pdfText(fs.readFileSync(tx.student)))[0] : '';
+    check('Aufgabe 1: geteiltes PDF hat die neue Zahl, die alte und die gelöschte Aufgabe fehlen', !tx.dialog && /3x \+ 4 = 25/.test(t1) && !/= 19/.test(t1) && !/Aufgabe 1/.test(t1), t1.slice(0, 160));
+
+    /* Aufgabe 2: ausfüllbar mit Lösung und Lösungsblatt */
+    await tapEl('[data-tool="field"]');
+    await tap(320, 200);
+    const fid2 = await TS('S.sel');
+    check('Aufgabe 2: Textfeld per Fingertipp gesetzt, auf dem Arbeitsblatt', await TS(`(B.find('${fid2}') || {}).type === 'field' && B.find('${fid2}').layer === 'base'`));
+    check('Aufgabe 2: Panel erklärt, wo die Lösung erscheint', await tp.isVisible('#panel [data-act="view-sol"]'));
+    await tp.fill('#p-solution', '7');
+    await tp.waitForTimeout(150);
+    await tapEl('[data-tool="select"]');
+    tx = await exportFiles('ipad-aufgabe2', ['student', 'solution'], tp);
+    check('Aufgabe 2: Dialog bietet Schülerfassung und Lösungsblatt', tx.dialog && !!tx.student && !!tx.solution);
+    const nStud = tx.student ? (await fieldNamesOf(tx.student)).length : 0, tSol = tx.solution ? (await pdfText(fs.readFileSync(tx.solution)))[0] : '';
+    check('Aufgabe 2: Schülerfassung hat das ausfüllbare Feld, Lösungsblatt zeigt „7“', nStud >= 1 && /(^|\s)7(\s|$)/.test(tSol), nStud + ' / ' + tSol.slice(0, 120));
+
+    /* Aufgabe 3: Scan – Wort ändern, Hilfe nur für die Hilfen-Fassung */
+    await tp.setInputFiles('#fileOpen', path.join(ROOT, 'test', 'vorlagen', 'scan-bruchrechnung.pdf'));
+    await tp.waitForFunction(() => document.getElementById('docName').value === 'scan-bruchrechnung', null, { timeout: 15000 });
+    await tp.waitForTimeout(300);
+    await tap(150, 160);
+    const offer = await tp.waitForSelector('.tst button:has-text("Text erkennen")', { timeout: 8000 }).catch(() => null);
+    check('Aufgabe 3: Finger auf Scan → Texterkennung wird angeboten', !!offer);
+    if (offer) {
+      await offer.tap();
+      await tp.waitForFunction(() => !!window.__bw.S.pages[0].ocr, null, { timeout: 120000 }).catch(() => {});
+      const L = await TS(`(() => { const l = B.ocrLines(S.pages[0].id).find(l => l.str.length > 8); return l && { x: l.x + Math.min(20, l.w / 2), y: l.base - l.fs * 0.3, str: l.str }; })()`);
+      check('Aufgabe 3: Text erkannt', !!L, L && L.str);
+      if (L) {
+        await tap(L.x, L.y);
+        check('Aufgabe 3: erkannte Zeile mit dem Finger bearbeitbar', await TS(`!!S.editing && !!B.find(S.editing).fromLine`));
+        await tp.keyboard.press('End'); await tp.keyboard.type(' geändert');
+        await tap(40, 780);
+      }
+      await tapEl('#viewSeg [data-vm="help"]');
+      await tapEl('[data-tool="text"]');
+      await tap(60, 800); await tp.keyboard.type('Tipp: erst kürzen');
+      await tap(500, 40);
+      const hint3 = await TS(`S.objs.find(o => o.text === 'Tipp: erst kürzen')`);
+      check('Aufgabe 3: Hilfe in Ansicht „+ Hilfen“ landet auf der Hilfe-Ebene', hint3 && hint3.layer === 'help', hint3 && hint3.layer);
+      tx = await exportFiles('ipad-aufgabe3', ['student', 'help'], tp);
+      const ts3 = tx.student ? (await pdfText(fs.readFileSync(tx.student))).join(' ') : '', th3 = tx.help ? (await pdfText(fs.readFileSync(tx.help))).join(' ') : '';
+      check('Aufgabe 3: Hilfe nur in der Fassung „mit Hilfen“, Änderung in beiden', !/erst kürzen/.test(ts3) && /erst kürzen/.test(th3) && /geändert/.test(ts3) && /geändert/.test(th3), ts3.slice(0, 80) + ' || ' + th3.slice(0, 80));
+    }
+    await tp.setViewportSize({ width: 1180, height: 820 }); await tp.waitForTimeout(300);
+    check('iPad quer: breite Leiste links, Ansicht-Knöpfe, kein seitliches Scrollen', (await tp.isVisible('#viewSeg')) && (await tp.evaluate(() => document.documentElement.scrollWidth <= innerWidth && getComputedStyle(document.getElementById('tools')).flexDirection === 'column')));
+    await tp.screenshot({ path: path.join(OUT, 'ipad-quer.png') });
+    await tp.setViewportSize({ width: 820, height: 1180 }); await tp.waitForTimeout(300);
+    await tp.screenshot({ path: path.join(OUT, 'ipad-hochkant.png') });
+    await tctx.close();
+  }
 
   check('Keine Fehler während des ganzen Laufs', errs.length === 0, errs.slice(0, 3).join(' / '));
   await browser.close(); srv.close();

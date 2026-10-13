@@ -7,7 +7,7 @@
 
 /* Der Name traegt die App-Version. validate.js vergleicht ihn mit APP_VERSION
    in der index.html. */
-const CACHE = 'blattwerk-1.1.0';
+const CACHE = 'blattwerk-1.2.0';
 
 const ASSETS = [
   './',

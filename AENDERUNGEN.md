@@ -1,5 +1,41 @@
 # Änderungen
 
+## 1.2.0 – Einfacher bedienen (Oktober 2026)
+
+- **Einfache Werkzeugleiste**: Nur noch Auswählen, Text, Markieren, Entfernen,
+  Bild und Textfeld sind zu sehen; alle anderen Werkzeuge stecken unter
+  **„Mehr“**. In den Einstellungen umschaltbar: *Werkzeuge: Einfach / Alle
+  Funktionen*. Klassenarbeit, Formular-Werkzeuge und Tastenkürzel erscheinen im
+  Seitenpanel erst, wenn sie gebraucht werden (oder bei „Alle Funktionen“).
+- **Text im PDF direkt antippen**: Mit „Auswählen“ wird eine Zeile im PDF (oder
+  erkannter Text auf Scans) per Tipp bearbeitbar – ohne eigenes Werkzeug. Ist
+  noch etwas ausgewählt, hebt der erste Tipp nur die Auswahl auf.
+- **Ansicht = Fassung**: Oben wählst du *Arbeitsblatt*, *+ Hilfen* oder
+  *+ Lösung*. Du siehst genau diese Fassung, und Neues landet automatisch auf
+  ihrer Ebene (Lösungen rot). Ersetzt den Ebenen-Knopf und die Schalter
+  „Hilfen/Lösungen anzeigen“. Wird ein Element auf eine ausgeblendete Ebene
+  verschoben, wechselt die Ansicht mit. Textfelder, Ankreuzkästchen, Tabellen,
+  Punkte und QR-Codes gehören immer zum Arbeitsblatt, auch wenn sie in
+  „+ Lösung“ angelegt werden; ist ihre Lösung gerade nicht zu sehen, sagt das
+  Panel, wo sie erscheint.
+- **Ein Knopf zum Teilen**: In der App heißt der Export „Teilen“; der doppelte
+  Export-Knopf im Panel entfällt.
+- **Datenschutz sichtbar** auf dem Startbildschirm: Alles bleibt auf dem
+  Gerät, auch die Auswertung von Schüler-PDFs.
+- **Scan antippen**: Tippt man auf eine eingescannte Seite ohne erkannten Text,
+  bietet Blattwerk die Texterkennung an; danach lassen sich die Zeilen antippen.
+- Seiten nur für das Lösungsblatt (Erwartungshorizont) sind außerhalb von
+  „+ Lösung“ blass und als ausgeblendet beschriftet.
+- Kopfzeile passt sich an: auf iPad und kleineren Laptops nur Symbole, auf dem
+  iPhone die Ansicht als Auswahlliste; „Neu“ und „Meine Blätter“ dort über das
+  Logo (Startbildschirm).
+
+### Behoben
+
+- iPad hochkant: Wer im unteren Bereich der Seite einen neuen Text antippte,
+  konnte nicht schreiben – das aufgehende Eigenschaften-Feld nahm dem Text den
+  Fokus. Fingertipps erzeugen keine nachträglichen Maus-Ereignisse mehr.
+
 ## 1.1.0 – Werkzeuge für Unterricht und Klassenarbeiten (Oktober 2026)
 
 ### Neu

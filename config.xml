@@ -4,9 +4,9 @@
      (1.0.0 -> 10000). validate.js prueft, dass alle drei zur APP_VERSION in
      der index.html und zum Cache-Namen in sw.js passen. -->
 <widget id="de.blattwerk.app"
-        version="1.1.0"
-        android-versionCode="10100"
-        ios-CFBundleVersion="10100"
+        version="1.2.0"
+        android-versionCode="10200"
+        ios-CFBundleVersion="10200"
         xmlns="http://www.w3.org/ns/widgets"
         xmlns:cdv="http://cordova.apache.org/ns/1.0">
 

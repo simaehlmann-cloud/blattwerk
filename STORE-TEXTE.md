@@ -15,8 +15,14 @@ auf Google Play und umgekehrt (Apple-Richtlinie 2.3.10).
 Blattwerk ist für Lehrkräfte gemacht, die Arbeitsblätter schnell anpassen
 wollen – ohne Konto, ohne Cloud, ohne Internet.
 
+DATENSCHUTZ VON ANFANG AN
+• Alles bleibt auf deinem Gerät – Blätter, Fotos und auch ausgefüllte
+  Schüler-PDFs bei der Auswertung
+• Es werden keine Daten übertragen: keine Anmeldung, keine Werbung, kein Tracking
+• Funktioniert vollständig offline, auch die Texterkennung
+
 ARBEITSBLÄTTER ANPASSEN
-• PDF öffnen und vorhandenen Text direkt ändern oder verschieben
+• PDF öffnen und vorhandenen Text einfach antippen und ändern
 • Text und Bilder entfernen – sie werden wirklich aus dem PDF gelöscht
 • Lösungen im Verlagsmaterial nur für die Schülerfassung ausblenden
 • Eigene Aufgaben, Hinweise und Bilder einfügen, auch per Foto
@@ -58,10 +64,10 @@ AUSWERTEN UND BEWERTEN
   Erwartungshorizont
 • Lesefreundliche Kopie mit größerer Schrift auf Knopfdruck
 
-DATENSCHUTZ
-• Funktioniert vollständig offline
-• Keine Anmeldung, keine Werbung, kein Tracking
-• Alle Blätter bleiben auf deinem Gerät
+EINFACH ZU BEDIENEN
+• Wenige Werkzeuge auf einen Blick, alle weiteren unter „Mehr“
+• Oben umschalten: Arbeitsblatt, mit Hilfen oder mit Lösung – du siehst genau,
+  was die Schüler bekommen
 
 ## Schlüsselwörter (App Store, max. 100 Zeichen)
 
