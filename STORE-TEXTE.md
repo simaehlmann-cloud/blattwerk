@@ -17,14 +17,14 @@ auf Google Play und umgekehrt (Apple-Richtlinie 2.3.10).
 ## Beschreibung
 
 Ohne harte Zeilenumbrüche, damit App Store Connect die Absätze richtig zeigt.
-Mit ★ markiert: Vollversion.
+Keine Symbole wie ★ oder mathematische Zeichen (√, ≤, ∞): App Store Connect lehnt sie als „ungültiges Zeichen“ ab.
 
 ```
 Blattwerk ist für Lehrkräfte gemacht, die Arbeitsblätter schnell anpassen wollen – ohne Konto, ohne Cloud, ohne Werbung.
 
 KOSTENLOS – MIT VOLLVERSION FÜR DIE EXTRAS
 • Kostenlos: PDFs bearbeiten, ausfüllbar machen und als Schülerfassung teilen
-• Vollversion als einmaliger In-App-Kauf, kein Abo: Hilfen und Lösungsblatt, Mathe-Werkzeuge, Texterkennung und Auswertung ausgefüllter Schüler-PDFs (unten mit ★ markiert)
+• Vollversion als einmaliger In-App-Kauf, kein Abo: Hilfen und Lösungsblatt, Mathe-Werkzeuge, Texterkennung und Auswertung ausgefüllter Schüler-PDFs (unten mit „Vollversion“ gekennzeichnet)
 
 DATENSCHUTZ VON ANFANG AN
 • Alles bleibt auf deinem Gerät – Blätter, Fotos und auch ausgefüllte Schüler-PDFs bei der Auswertung
@@ -37,7 +37,7 @@ ARBEITSBLÄTTER ANPASSEN
 • Lösungen im Verlagsmaterial für die Schülerfassung ausblenden
 • Eigene Aufgaben, Hinweise und Bilder einfügen, auch per Foto
 • Fotografierte Arbeitsblätter gerade ziehen, zuschneiden und aufhellen
-• ★ Texterkennung für Scans und Fotos: Text ändern, durchsuchbar und vorlesbar machen
+• Texterkennung für Scans und Fotos: Text ändern, durchsuchbar und vorlesbar machen (Vollversion)
 • Ausschnitte aus Schulbuch-PDFs mit Quellenangabe
 • Textstellen farbig markieren, alte Aufgaben abdecken
 
@@ -53,22 +53,22 @@ VORLAGEN MIT PASSENDEM HINTERGRUND
 • Schreiblinien für ausgedruckte Blätter
 
 MATHEMATIK
-• ★ Formeln mit Brüchen, Wurzeln, Potenzen und Indizes
-• ★ Koordinatensysteme mit Funktionsgraphen, Kreise, Dreiecke, Vierecke und Winkel
+• Formeln mit Brüchen, Wurzeln, Potenzen und Indizes (Vollversion)
+• Koordinatensysteme mit Funktionsgraphen, Kreise, Dreiecke, Vierecke und Winkel (Vollversion)
 • Wertetabellen mit ausfüllbaren Zellen
 • Strecken, Pfeile, Rechtecke und Rechenkästchen
-• Zeichen wie π, √, ≤, ≥, ∞ oder Δ landen sauber im PDF
+• Mathematische Sonderzeichen wie Pi, Wurzel, Kleiner-gleich oder Unendlich landen sauber im PDF
 
 EIN BLATT – DREI FASSUNGEN
-• ★ Hilfen und Lösungen auf eigenen Ebenen
-• ★ Teilen als Schülerfassung, mit Hilfen oder als Lösungsblatt
-• ★ QR-Code zur Selbstkontrolle, funktioniert ohne Internet
+• Hilfen und Lösungen auf eigenen Ebenen (Vollversion)
+• Neben der Schülerfassung auch eine Fassung mit Hilfen und das Lösungsblatt (Vollversion)
+• QR-Code zur Selbstkontrolle, funktioniert ohne Internet (Vollversion)
 
 AUSWERTEN UND BEWERTEN
-• ★ Ausgefüllte Schüler-PDFs einlesen: Übersicht je Aufgabe und je Schüler
-• ★ Korrigierte PDFs mit Häkchen, Lösungen und Kommentar zurückgeben
+• Ausgefüllte Schüler-PDFs einlesen: Übersicht je Aufgabe und je Schüler (Vollversion)
+• Korrigierte PDFs mit Häkchen, Lösungen und Kommentar zurückgeben (Vollversion)
 • Klassenarbeiten mit Punkten, Anforderungsbereichen und Notenschlüssel
-• ★ Erwartungshorizont auf Knopfdruck
+• Erwartungshorizont auf Knopfdruck (Vollversion)
 • Lesefreundliche Kopie mit größerer Schrift
 
 EINFACH ZU BEDIENEN
@@ -137,14 +137,18 @@ Wörter aus Name und Untertitel zählen schon und stehen hier nicht noch einmal.
 ## Screenshots
 
 Automatisch mit `node store-bilder.js` (Ordner `store-bilder/`):
-iPhone 6,3″ 1206 × 2622 (6 Bilder), iPad 13″ 2048 × 2732 (5 Bilder).
+iPhone 6,3″ 1206 × 2622 und iPad 13″ 2048 × 2732, je 10 Bilder.
 
 1. Beispielblatt: ausfüllbar, mit Formeln und Graph
 2. Ansicht „+ Lösung“: Lösungen rot, Graph eingezeichnet
 3. Eigenes PDF: Lücken werden zu ausfüllbaren Feldern
-4. Teilen: Schülerfassung, mit Hilfen, Lösungsblatt
-5. Koordinatensystem mit Funktionsgraph einstellen
-6. (nur iPhone) Startbildschirm: alles bleibt auf dem Gerät
+4. Vorhandenen Text im PDF antippen und ändern
+5. Aufgaben entfernen und durch eigene ersetzen
+6. Teilen: Schülerfassung, mit Hilfen, Lösungsblatt
+7. Koordinatensystem mit Funktionsgraph einstellen
+8. Texterkennung: gescannte Blätter wieder bearbeitbar
+9. Neues Blatt mit passendem Hintergrund
+10. iPhone: Startbildschirm · iPad: Erwartungshorizont auf Knopfdruck
 
 Prüfbild für den In-App-Kauf: `test/ausgabe/vollversion-review.png` (aus smoketest.js).
 

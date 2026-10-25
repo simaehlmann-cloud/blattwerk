@@ -42,6 +42,33 @@ module.exports = [
     }
   },
   {
+    was: 'Vorhandenen Text im PDF antippen und ändern',
+    tu: async ({ pg, B, g }) => {
+      await B(`B.selectIds([]); B.setTool('edittext'); ${breite(g.name === 'iphone' ? 1.35 : 1.15)}`);
+      await pg.waitForTimeout(500);
+      await B(`const pid = S.pages[0].id; await B.ensureLines(pid);
+        const L = S.lines[pid].list.find(l => /Pizza/.test(l.str)); B.convertLine(pid, L.k);
+        ${zu("o => o.fromLine", g.name === 'iphone' ? 0.3 : 0.4)}`);
+      await pg.waitForTimeout(300);
+      await pg.keyboard.press('ControlOrMeta+a');
+      await pg.keyboard.type('3  Mia hat 5/6 einer Pizza, Ben hat 3/4. Wer hat mehr? Begründe.');
+    }
+  },
+  {
+    was: 'Aufgaben entfernen und durch eigene ersetzen',
+    tu: async ({ pg, B, g }) => {
+      await B(`B.endEdit(); B.selectIds([]);
+        const pid = S.pages[0].id; B.setTool('erase'); await B.prepareErase();
+        B.eraseRect(pid, { x: 55, y: 540, w: 485, h: 32 });
+        const L = S.lines[pid].list.find(l => /Ergänze/.test(l.str)); B.convertLine(pid, L.k);`);
+      await pg.waitForTimeout(300);
+      await pg.keyboard.press('ControlOrMeta+a');
+      await pg.keyboard.type('4  Erfinde eine eigene Aufgabe mit den Nennern 3 und 4 und löse sie.');
+      await B(`B.endEdit(); B.selectIds([]); B.setTool('erase'); await B.prepareErase();
+        ${breite(g.name === 'iphone' ? 1.35 : 1.15)} ${zu("o => o.type === 'whiteout'", g.name === 'iphone' ? 0.45 : 0.55)}`);
+    }
+  },
+  {
     was: 'Teilen: Schülerfassung, mit Hilfen, Lösungsblatt',
     tu: async ({ B }) => {
       await B(`${dialogeZu}; B.selectIds([]); B.newSheet(true); B.setView('base'); ${breite()} document.getElementById('stage').scrollTop = 0;`);
@@ -57,8 +84,36 @@ module.exports = [
     }
   },
   {
+    was: 'Texterkennung: gescannte Blätter wieder bearbeitbar',
+    tu: async ({ pg, B, g }) => {
+      await B(`${dialogeZu}; B.selectIds([]); B.setTool('select'); B.setView('base')`);
+      await pg.setInputFiles('#fileOpen', path.join(__dirname, 'test', 'vorlagen', 'scan-bruchrechnung.pdf'));
+      await pg.waitForFunction(() => window.__bw.S.pages.length >= 1 && window.__bw.S.pages[0].sid != null && !document.querySelector('.page.loading'), null, { timeout: 30000 });
+      await pg.waitForTimeout(800);
+      await B(`await B.ocrPages([S.pages[0].id])`);
+      await pg.waitForFunction(() => !!window.__bw.S.pages[0].ocr, null, { timeout: 180000 });
+      await pg.waitForTimeout(500);
+      await B(`${dialogeZu}; B.setTool('edittext'); ${breite(g.name === 'iphone' ? 1.2 : 1)} document.getElementById('stage').scrollTop = 0;`);
+    }
+  },
+  {
+    was: 'Neues Blatt mit passendem Hintergrund',
+    tu: async ({ B }) => {
+      await B(`${dialogeZu}; B.setTool('select'); B.newSheet(true); B.setView('base'); ${breite()} document.getElementById('stage').scrollTop = 0; document.getElementById('btnNew').click();`);
+    }
+  },
+  {
+    was: 'Klassenarbeit: Erwartungshorizont auf Knopfdruck',
+    nur: 'ipad',
+    tu: async ({ B }) => {
+      await B(`${dialogeZu}; B.setView('sol'); B.addHorizon(); B.selectIds([]); ${breite()}
+        const pgs = document.querySelectorAll('.page'), st2 = document.getElementById('stage');
+        st2.scrollTop += pgs[pgs.length - 1].getBoundingClientRect().top - st2.getBoundingClientRect().top - 12;`);
+    }
+  },
+  {
     was: 'Startbildschirm: alles bleibt auf dem Gerät',
     nur: 'iphone',
-    tu: async ({ B }) => { await B(`B.selectIds([]); await B.showHome('main')`); }
+    tu: async ({ B }) => { await B(`${dialogeZu}; B.selectIds([]); await B.showHome('main')`); }
   }
 ];
