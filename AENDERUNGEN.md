@@ -1,5 +1,28 @@
 # Änderungen
 
+## 1.3.0 – Kostenlos mit Vollversion (Oktober 2026)
+
+- **Blattwerk ist kostenlos.** Ein einmaliger In-App-Kauf (3,99 €, kein Abo)
+  schaltet die **Vollversion** frei: Hilfen und Lösungen (Ansichten „+ Hilfen“
+  und „+ Lösung“, Export mit Hilfen und als Lösungsblatt, QR-Code zur
+  Selbstkontrolle, Erwartungshorizont), Mathe-Werkzeuge (Formel, Koordinaten
+  mit Funktionsgraphen, Kreis, Dreieck, Vierecke, Winkel), Texterkennung und
+  das Auswerten ausgefüllter Schüler-PDFs.
+- Gesperrtes trägt ein kleines Schloss. Antippen öffnet einen Hinweis mit
+  allen vier Bereichen, Preis, **Kaufen** und **Käufe wiederherstellen**.
+- Gesperrt ist nur das Anlegen: Blätter mit Formeln oder Lösungen lassen sich
+  weiter öffnen, bearbeiten und als Schülerfassung teilen.
+- Einstellungen und Hilfe haben einen Abschnitt „Vollversion“, der
+  Startbildschirm einen Knopf dazu (verschwindet nach dem Kauf).
+- Kauf über StoreKit bzw. Google Play Billing (cordova-plugin-purchase
+  13.19.1). Kein eigener Server, keine laufenden Kosten: Der Kauf wird auf dem
+  Gerät vermerkt; „Käufe wiederherstellen“ holt ihn zurück.
+- Datenschutzerklärung und Lizenzen ergänzt (Kaufschnittstelle).
+- Prüfkette: validate.js prüft Plugin, Produkt-ID, Wiederherstellen, Lizenz
+  und Datenschutz; smoketest.js spielt Sperren, Kauf, Neustart und
+  Wiederherstellen durch (Store nachgebaut) und erzeugt das Prüfbild für
+  App Store Connect.
+
 ## 1.2.0 – Einfacher bedienen (Oktober 2026)
 
 - **Einfache Werkzeugleiste**: Nur noch Auswählen, Text, Markieren, Entfernen,

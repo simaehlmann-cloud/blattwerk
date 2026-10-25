@@ -4,9 +4,9 @@
      (1.0.0 -> 10000). validate.js prueft, dass alle drei zur APP_VERSION in
      der index.html und zum Cache-Namen in sw.js passen. -->
 <widget id="de.blattwerk.app"
-        version="1.2.0"
-        android-versionCode="10200"
-        ios-CFBundleVersion="10200"
+        version="1.3.0"
+        android-versionCode="10300"
+        ios-CFBundleVersion="10300"
         xmlns="http://www.w3.org/ns/widgets"
         xmlns:cdv="http://cordova.apache.org/ns/1.0">
 
@@ -106,4 +106,8 @@
          sichern", auf Android im Download-Ordner oder in einer anderen App. -->
     <plugin name="cordova-plugin-x-socialsharing" spec="^6.0.4" />
     <plugin name="cordova-plugin-statusbar" spec="^4.0.0" />
+    <!-- Vollversion als einmaliger In-App-Kauf (StoreKit / Google Play Billing).
+         Genaue Version: Der Kauf ist der einzige Weg zu Geld, hier soll kein
+         Update unbemerkt etwas aendern. Produkt-ID: de.blattwerk.app.vollversion -->
+    <plugin name="cordova-plugin-purchase" spec="13.19.1" />
 </widget>

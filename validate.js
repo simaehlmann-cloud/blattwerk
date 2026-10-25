@@ -73,6 +73,22 @@ const wfSdk = (wfAndroid.match(/TARGET_SDK: '(\d+)'/) || [])[1];
 if (tsdk !== wfSdk) E(`targetSdk config.xml ${tsdk} ≠ Workflow ${wfSdk}`); else O(`Android-Ziel-SDK ${tsdk} in config.xml und Workflow gleich`);
 for (const m of config.matchAll(/(?:src|foreground)="(res\/android\/[^"]+)"/g)) if (!exists(m[1])) E(`config.xml verweist auf fehlende Datei ${m[1]}`);
 if (!/<plugin name="cordova-plugin-x-socialsharing"/.test(config)) E('Teilen-Plugin fehlt in config.xml');
+/* In-App-Kauf: Ohne „Käufe wiederherstellen“ weist Apple die App ab
+   (Richtlinie 3.1.1); die Produkt-ID muss mit App Store Connect und Play
+   Console übereinstimmen, also mit dem, was EINRICHTUNG.md vorgibt. */
+{
+  const purch = (config.match(/<plugin name="cordova-plugin-purchase" spec="([^"]+)"/) || [])[1];
+  const vollId = (js.match(/const VOLL_ID = '([^']+)'/) || [])[1];
+  const n0 = errors.length;
+  if (!purch) E('Kauf-Plugin cordova-plugin-purchase fehlt in config.xml');
+  else if (!/^\d+\.\d+\.\d+$/.test(purch)) E(`Kauf-Plugin bitte mit genauer Version eintragen, nicht „${purch}“`);
+  if (vollId !== 'de.blattwerk.app.vollversion') E(`Produkt-ID der Vollversion ist ${vollId}, erwartet de.blattwerk.app.vollversion`);
+  if (vollId && !read('EINRICHTUNG.md').includes(vollId)) E('EINRICHTUNG.md nennt die Produkt-ID der Vollversion nicht');
+  if (!js.includes('restorePurchases()') || !js.includes('Käufe wiederherstellen')) E('„Käufe wiederherstellen“ fehlt in der App (Apple-Richtlinie 3.1.1)');
+  if (purch && !read('make-legal-pages.py').includes('cordova-plugin-purchase ' + purch)) E(`Lizenzen nennen cordova-plugin-purchase ${purch} nicht`);
+  if (!/Vollversion/.test(read('make-legal-pages.py'))) E('Datenschutzerklärung erwähnt den Kauf der Vollversion nicht');
+  if (errors.length === n0) O(`In-App-Kauf: Plugin ${purch}, Produkt-ID ${vollId}, Wiederherstellen, Lizenz und Datenschutz`);
+}
 
 /* ---------- 4. Dateien, auf die index.html verweist ---------- */
 const refs = new Set();

@@ -155,6 +155,19 @@ body.home-open #app{visibility:hidden}
 .tool.more-btn{color:var(--ink)}
 .tool.more-btn[aria-expanded="true"]{background:var(--accent-soft)}
 .tool[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.tool{position:relative}
+:root{--lock-i:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4.5' y='10.5' width='15' height='11' rx='2.2'/%3E%3Cpath d='M8 11V7.5a4 4 0 018 0V11' fill='none' stroke='%23000' stroke-width='2.6'/%3E%3C/svg%3E")}
+.lk::after{content:"";display:inline-block;width:.85em;height:.85em;margin-left:.3em;vertical-align:-.06em;background:currentColor;opacity:.65;-webkit-mask:var(--lock-i) center/contain no-repeat;mask:var(--lock-i) center/contain no-repeat}
+.tool.lk::after{position:absolute;top:5px;right:7px;margin:0;width:10px;height:10px}
+.tg.off{color:var(--muted);cursor:default}
+.linkbtn{border:0;background:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+.voll-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.voll-list li{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.voll-list li span{font-size:13px;color:var(--muted);line-height:1.4}
+.voll-list li.on{border-color:var(--accent);background:var(--accent-soft)}
+.voll-ok{display:flex;align-items:center;gap:8px}
+.voll-ok svg.i{width:22px;height:22px;flex:none;color:#2e7d32}
+.voll-acts{flex-wrap:wrap}
 
 .stage{grid-area:stage;overflow:auto;position:relative;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;
   background-color:var(--desk);
@@ -416,7 +429,7 @@ textarea.tin{min-height:64px;resize:vertical;font-family:ui-monospace,SFMono-Reg
 'use strict';
 
 /* Muss zu sw.js (CACHE), config.xml (version) und package.json passen. validate.js prueft das. */
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.3.0';
 
 const pdfjs = window.pdfjsLib;
 const PL = window.PDFLib;
@@ -1311,9 +1324,173 @@ function busy(msg) {
   document.body.append(b); return () => b.remove();
 }
 
+/* ======================================================================
+   Vollversion (einmaliger In-App-Kauf, kein Abo)
+   Gratis: PDFs öffnen und bearbeiten, Text, Markieren, Entfernen, Bilder,
+   Felder und Kästchen, Tabellen, Linien, Punkte, einfache Formen, Teilen
+   der Schülerfassung. Die Vollversion schaltet die Lehrer-Extras frei
+   (VOLL_FEATURES). Gesperrt ist nur das Anlegen: Wer ein Blatt mit Formeln
+   oder Lösungen bekommt, sieht, verschiebt und teilt es weiterhin.
+   Im Browser gibt es keinen Store, dort ist alles frei (Entwicklung).
+   ?kauf=test spielt dort den Store nach – nur für die Prüfkette.
+   Ohne Server gibt es keine Belegprüfung: Der Kauf wird auf dem Gerät
+   vermerkt; geht der Speicher verloren, holt „Käufe wiederherstellen“ ihn
+   zurück.
+   ====================================================================== */
+const VOLL_ID = 'de.blattwerk.app.vollversion';
+const VOLL_KEY = 'bw:voll';
+const VOLL_TEST = !IS_APP && /[?&]kauf=test\b/.test(location.search);
+const VOLL_FEATURES = {
+  loesung: ['Hilfen und Lösungen', 'Aus einem Blatt die Schülerfassung, eine Fassung mit Hilfen und das Lösungsblatt erzeugen. Dazu QR-Codes zur Selbstkontrolle und der Erwartungshorizont.'],
+  mathe: ['Mathe-Werkzeuge', 'Formeln, Koordinatensysteme mit Funktionsgraphen und geometrische Formen: Kreis, Dreieck, Trapez, Parallelogramm, Raute, Drachen und Winkel.'],
+  ocr: ['Texterkennung', 'Text auf Scans und Fotos erkennen, direkt ändern und im PDF durchsuchbar machen – auf dem Gerät, ohne Internet.'],
+  auswertung: ['Rücklauf auswerten', 'Ausgefüllte Schüler-PDFs einlesen, Übersicht je Aufgabe und je Schüler, korrigierte PDFs mit Häkchen und Kommentar zurückgeben.']
+};
+/* Werkzeuge und Formen, deren Anlegen zur Vollversion gehört */
+const VOLL_TOOLS = { formula: 'mathe', coord: 'mathe', qr: 'loesung' };
+const VOLL_SHAPES = new Set(['circle', 'triangle', 'trapez', 'parallel', 'raute', 'drachen', 'angle']);
+const Voll = { owned: false, price: '', state: 'idle', busy: false, store: null, platform: null, C: null };
+try { Voll.owned = localStorage.getItem(VOLL_KEY) === '1'; } catch (e) {}
+const hasVoll = () => Voll.owned || (!IS_APP && !VOLL_TEST);
+const isAndroid = () => IS_APP && window.cordova && window.cordova.platformId === 'android';
+const storeName = () => isAndroid() ? 'Google Play' : 'App Store';
+const storeAccount = () => isAndroid() ? 'demselben Google-Konto' : 'derselben Apple-ID';
+/* Markierung für gesperrte Knöpfe: ' lk' als zusätzliche Klasse */
+const lk = feat => hasVoll() || !feat ? '' : ' lk';
+function needVoll(feat) {
+  if (hasVoll()) return true;
+  vollDialog(feat);
+  return false;
+}
+function grantVoll(say) {
+  const was = Voll.owned;
+  Voll.owned = true;
+  try { localStorage.setItem(VOLL_KEY, '1'); } catch (e) {}
+  if (VOLL_TEST) try { localStorage.setItem('bw:voll-test-konto', '1'); } catch (e) {}
+  if (was) return;
+  const d = document.querySelector('.dlg .voll'); if (d) d.closest('.dlg').remove();
+  updVollUI();
+  if (say) toast('Danke! Die Vollversion ist freigeschaltet.', null, 6000);
+}
+/* Alles neu zeichnen, was Schlösser oder den Kaufzustand zeigt */
+function updVollUI() {
+  if (!toolsEl.children.length) return;
+  const more = toolsEl.classList.contains('more');
+  buildTools(); if (more) toggleMoreTools(true);
+  toolsEl.querySelectorAll('.tool').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === S.tool)));
+  updViewSwitch();
+  if (!homeEl.hidden && homeView === 'settings') renderHome(); else renderPanel();
+  const d = document.querySelector('.dlg .voll'); if (d) fillVollDialog(d);
+}
+function initVoll() {
+  if (VOLL_TEST) { Voll.price = '3,99 €'; Voll.state = 'ready'; return; }
+  const C = window.CdvPurchase;
+  if (!IS_APP) return;
+  if (!C || !C.store) { Voll.state = 'none'; return; }
+  const store = C.store, platform = isAndroid() ? C.Platform.GOOGLE_PLAY : C.Platform.APPLE_APPSTORE;
+  Object.assign(Voll, { C, store, platform, state: 'loading' });
+  try { store.verbosity = C.LogLevel.WARNING; } catch (e) {}
+  const mine = t => !!t && (t.products || []).some(p => p.id === VOLL_ID);
+  store.register([{ id: VOLL_ID, type: C.ProductType.NON_CONSUMABLE, platform }]);
+  store.when()
+    .productUpdated(p => {
+      if (p.id !== VOLL_ID) return;
+      const pr = p.pricing; if (pr && pr.price) Voll.price = pr.price;
+      Voll.state = 'ready';
+      if (p.owned) grantVoll(Voll.busy); else updVollUI();
+    })
+    /* Gekauft oder wiederhergestellt: freischalten und abschließen. Google
+       erstattet Käufe, die nicht binnen drei Tagen bestätigt (finish) sind. */
+    .approved(t => { if (mine(t)) grantVoll(Voll.busy); t.finish(); })
+    .finished(t => { if (mine(t)) grantVoll(Voll.busy); })
+    .receiptUpdated(() => { if (store.owned({ id: VOLL_ID, platform })) grantVoll(Voll.busy); });
+  store.error(e => { console.warn('Store', e && e.code, e && e.message); });
+  store.initialize([platform]).then(errs => {
+    if (errs && errs.length) console.warn('Store-Start', errs.map(e => e.message).join('; '));
+    if (!store.get(VOLL_ID, platform)) Voll.state = 'none';
+    updVollUI();
+  }).catch(e => { console.warn(e); Voll.state = 'none'; updVollUI(); });
+}
+async function buyVoll() {
+  if (Voll.busy || Voll.owned) return;
+  if (VOLL_TEST) {
+    if (await ask(`Testkauf: Vollversion für ${Voll.price} kaufen?`, 'Kaufen')) grantVoll(true);
+    return;
+  }
+  const s = Voll.store, p = s && s.get(VOLL_ID, Voll.platform), offer = p && p.getOffer();
+  if (!offer) {
+    toast(`Der ${storeName()} ist gerade nicht erreichbar. Bitte prüfe die Internetverbindung und versuche es später noch einmal.`, null, 7000);
+    if (s) s.update().catch(() => {});
+    return;
+  }
+  Voll.busy = true; updVollUI();
+  try {
+    const err = await offer.order();
+    if (err && err.code !== Voll.C.ErrorCode.PAYMENT_CANCELLED) toast('Der Kauf wurde nicht abgeschlossen. Bitte versuche es noch einmal.', null, 7000);
+  } catch (e) {
+    console.warn(e); toast('Der Kauf wurde nicht abgeschlossen. Bitte versuche es noch einmal.', null, 7000);
+  } finally { Voll.busy = false; updVollUI(); }
+}
+async function restoreVoll() {
+  if (Voll.busy) return;
+  if (Voll.owned) { toast('Die Vollversion ist bereits freigeschaltet.'); return; }
+  Voll.busy = true; updVollUI();
+  let err = null;
+  try {
+    if (VOLL_TEST) { let k = null; try { k = localStorage.getItem('bw:voll-test-konto'); } catch (e) {} if (k) grantVoll(true); }
+    else if (Voll.store) {
+      err = await Voll.store.restorePurchases();
+      /* Wiederhergestellte Käufe melden sich kurz nach dem Versprechen */
+      if (!Voll.owned) await new Promise(r => setTimeout(r, 2000));
+    } else err = true;
+  } catch (e) { err = e; }
+  Voll.busy = false; updVollUI();
+  if (Voll.owned) return;
+  toast(err ? `Der ${storeName()} ist gerade nicht erreichbar. Bitte später noch einmal versuchen.` : `Mit ${storeAccount()} wurde keine Vollversion gekauft.`, null, 7000);
+}
+function vollDialog(feat) {
+  endEdit();
+  const old = document.querySelector('.dlg .voll'); if (old) old.closest('.dlg').remove();
+  const d = openDialog('', 'voll wide');
+  d.dataset.feat = feat || '';
+  fillVollDialog(d.querySelector('.voll'));
+  d.addEventListener('click', e => {
+    const b = e.target.closest('[data-voll]');
+    if (!b && e.target !== d) return;
+    const a = b ? b.dataset.voll : 'close';
+    if (a === 'buy') buyVoll(); else if (a === 'restore') restoreVoll(); else d.remove();
+  });
+  const f = d.querySelector('[data-voll="buy"]'); if (f && !f.disabled) f.focus();
+}
+function fillVollDialog(box) {
+  const feat = box.closest('.dlg').dataset.feat, f = VOLL_FEATURES[feat];
+  const price = Voll.price ? ` – ${esc(Voll.price)}` : '';
+  const none = Voll.state === 'none', wait = Voll.state === 'loading';
+  box.innerHTML = Voll.owned
+    ? `<h2 class="dh">Vollversion</h2><p class="voll-ok">${hi('check')}<span>Freigeschaltet. Danke, dass du Blattwerk unterstützt!</span></p>
+       <div class="row end"><button class="btn primary" data-voll="close">Fertig</button></div>`
+    : `<h2 class="dh">Blattwerk Vollversion</h2>
+    ${f ? `<p>Das gehört zur Vollversion: <b>${esc(f[0])}</b>.</p>` : ''}
+    <p class="dnote">Einmal kaufen, dauerhaft nutzen – kein Abo, keine Werbung. Was jetzt gratis ist, bleibt gratis.</p>
+    <ul class="voll-list">${Object.entries(VOLL_FEATURES).map(([k, [t, x]]) => `<li${k === feat ? ' class="on"' : ''}><b>${esc(t)}</b><span>${esc(x)}</span></li>`).join('')}</ul>
+    ${none ? `<p class="note">Der ${storeName()} ist gerade nicht erreichbar. Bitte prüfe die Internetverbindung.</p>` : ''}
+    <div class="row end voll-acts"><button class="btn" data-voll="close">Später</button><button class="btn" data-voll="restore" ${Voll.busy ? 'disabled' : ''}>Käufe wiederherstellen</button>
+      <button class="btn primary" data-voll="buy" ${Voll.busy || wait ? 'disabled' : ''}>${Voll.busy ? 'Einen Moment …' : wait ? 'Preis wird geladen …' : 'Vollversion kaufen' + price}</button></div>
+    <p class="mini">Der Kauf gilt auch auf deinen anderen Geräten mit ${storeAccount()}: dort einfach „Käufe wiederherstellen“ antippen.</p>`;
+}
+/* Abschnitt für Einstellungen und Hilfe */
+function vollSectionHTML() {
+  if (!IS_APP && !VOLL_TEST) return '';
+  return `<section class="home-card"><h2>Vollversion</h2>
+    ${Voll.owned ? `<p class="voll-ok">${hi('check')}<span>Freigeschaltet. Danke, dass du Blattwerk unterstützt!</span></p>`
+      : `<p>Hilfen und Lösungen, Mathe-Werkzeuge, Texterkennung und das Auswerten ausgefüllter Schüler-PDFs gehören zur Vollversion – ein einmaliger Kauf${Voll.price ? ' für ' + esc(Voll.price) : ''}, kein Abo.</p>
+      <div class="home-foot"><button class="btn primary" data-h="voll">Mehr zur Vollversion</button><button class="btn" data-h="voll-restore" ${Voll.busy ? 'disabled' : ''}>Käufe wiederherstellen</button></div>`}
+  </section>`;
+}
+
 function buildTools() {
   const simple = P.mode === 'simple';
-  const btn = t => `<button class="tool${simple && !CORE_TOOLS.includes(t.id) ? ' extra' : ''}" data-tool="${t.id}" title="${t.label} (${t.key.toUpperCase()})" aria-pressed="${S.tool === t.id}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICON[t.id]}</svg>${t.label}</button>`;
+  const btn = t => `<button class="tool${simple && !CORE_TOOLS.includes(t.id) ? ' extra' : ''}${lk(VOLL_TOOLS[t.id])}" data-tool="${t.id}" title="${t.label} (${t.key.toUpperCase()})${lk(VOLL_TOOLS[t.id]) ? ' – Vollversion' : ''}" aria-pressed="${S.tool === t.id}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICON[t.id]}</svg>${t.label}</button>`;
   toolsEl.classList.toggle('simple', simple); toolsEl.classList.remove('more');
   toolsEl.innerHTML = simple
     ? TOOLS.filter(t => CORE_TOOLS.includes(t.id)).map(btn).join('') + `<button class="tool more-btn" id="toolsMore" aria-expanded="false" title="Weitere Werkzeuge"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg><span>Mehr</span></button>` + TOOLS.filter(t => !CORE_TOOLS.includes(t.id)).map(btn).join('')
@@ -1333,6 +1510,7 @@ toolsEl.addEventListener('click', e => {
   if (b.classList.contains('extra')) toggleMoreTools(false);
 });
 function setTool(id) {
+  if (VOLL_TOOLS[id] && !needVoll(VOLL_TOOLS[id])) return;
   endEdit();
   if (S.splitMode) { S.splitMode = false; document.body.classList.remove('splitting'); }
   if (id === 'image') { $('#fileImg').click(); id = 'select'; }
@@ -1360,6 +1538,7 @@ const exportLabel = () => IS_APP ? 'Teilen' : 'PDF exportieren';
 const VIEWS = [['base', 'Arbeitsblatt', 'Arbeitsblatt'], ['help', '+ Hilfen', 'Mit Hilfen'], ['sol', '+ Lösung', 'Mit Lösung']];
 function setView(m) {
   if (!VIEWS.some(v => v[0] === m)) m = 'base';
+  if (m !== 'base' && !hasVoll()) { updViewSwitch(); needVoll('loesung'); return false; }
   endEdit();
   S.layer = m; S.view = { help: m !== 'base', sol: m === 'sol' };
   if (selIds().some(id => !visible(find(id)))) setSel(null);
@@ -1375,7 +1554,7 @@ function updViewSwitch() {
     /* Schmal: kurze Namen, Farbe am Rand statt Punkt */
     sel.innerHTML = VIEWS.map(([k, l]) => `<option value="${k}">${k === 'base' ? 'Blatt' : l}</option>`).join('');
   }
-  seg.querySelectorAll('[data-vm]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.vm === S.layer)));
+  seg.querySelectorAll('[data-vm]').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.vm === S.layer)); b.classList.toggle('lk', b.dataset.vm !== 'base' && !hasVoll()); });
   if (sel.value !== S.layer) sel.value = S.layer;
   sel.parentNode.style.borderColor = col(S.layer);
 }
@@ -2692,6 +2871,7 @@ function nudge(dx, dy) {
   os.forEach(o => moveObj(o, dx, dy)); renderObjs(os[0].page); queueSave();
 }
 function setLayer(l) {
+  if (l !== 'base' && !needVoll('loesung')) return;
   const os = selIds().map(find).filter(Boolean); if (!os.length) return; snap();
   for (const o of os) { o.layer = l; if (l === 'sol' && ['text', 'formula'].includes(o.type) && (o.color || '#000000') === '#000000') o.color = RED; }
   /* Verschobenes soll nicht verschwinden: Ansicht wechselt mit, wenn die
@@ -2820,7 +3000,7 @@ const parseNum = s => parseFloat(String(s).trim().replace(/−/g, '-').replace('
 const swatches = (prop, list, cur, custom) => `<div class="sw">${list.map(c => { const [v, n] = Array.isArray(c) ? c : [c, c]; return `<button data-set="${prop}" data-v='"${v}"' style="background:${v}" title="${n}" aria-label="${n}" aria-pressed="${String(cur).toLowerCase() === v}"></button>`; }).join('')}${custom ? `<input type="color" id="p-${prop}" data-prop="${prop}" value="${isHex(cur) ? cur : '#000000'}" title="Eigene Farbe" aria-label="Eigene Farbe">` : ''}</div>`;
 const toggle = (prop, v, label) => `<label class="tg"><input type="checkbox" id="p-${prop}" data-prop="${prop}" data-kind="bool" ${v ? 'checked' : ''}>${label}</label>`;
 const tin = (prop, v, label, ph) => `<div class="row"><label for="p-${prop}">${label}</label><input class="tin" id="p-${prop}" data-prop="${prop}" value="${esc(v || '')}" placeholder="${esc(ph || '')}" autocomplete="off"></div>`;
-const layerSeg = (cur, attr) => segBtns('layer', LAYERS.map(([v, l]) => [v, l]), cur, attr);
+const layerSeg = (cur, attr) => segBtns('layer', LAYERS.map(([v, l]) => [v, v !== 'base' && !hasVoll() ? l + '<span class="lk"></span>' : l]), cur, attr);
 
 /* Vorgaben für neue Elemente des gewählten Werkzeugs (Farbe, Schrift, Strich) */
 const prefSw = (key, list, custom) => `<div class="sw">${list.map(c => { const [v, n] = Array.isArray(c) ? c : [c, c]; return `<button data-pref="${key}" data-v='"${v}"' style="background:${v}" title="${n}" aria-label="${n}" aria-pressed="${String(P[key]).toLowerCase() === v.toLowerCase()}"></button>`; }).join('')}${custom ? `<input type="color" data-prefcolor="${key}" value="${P[key]}" title="Eigene Farbe" aria-label="Eigene Farbe">` : ''}</div>`;
@@ -2874,7 +3054,7 @@ function examPanel() {
     <h3>Notenschlüssel (Mindestanteil in %)</h3>
     <div class="rng" style="grid-template-columns:auto auto auto">${grades.map((v, i) => `<span>Note ${i + 1}</span>${numIn('grade' + i, v, 0, 100, 2.5, 'sm')}<span>ab ${fmtNum(g[i])} P.</span>`).join('')}<span>Note 6</span><span></span><span>darunter</span></div>
     <p class="mini">Vorschlag – bitte an die Vorgaben eurer Fachkonferenz anpassen.</p>
-    <button class="btn" data-act="horizon">Erwartungshorizont als Seite anfügen</button></section>`;
+    <button class="btn${lk('loesung')}" data-act="horizon">Erwartungshorizont als Seite anfügen</button></section>`;
 }
 function renderPanel() {
   const ids = selIds(), o = ids.length === 1 ? find(ids[0]) : null;
@@ -2895,7 +3075,7 @@ function renderPanel() {
     const t = TOOLS.find(t => t.id === S.tool) || TOOLS[0], i = curIndex(), p = page(S.cur) || S.pages[0];
     h += `<section><h3>Werkzeug</h3><h2>${t.label}</h2><p>${t.hint}</p>
       ${toolPrefs()}
-      ${S.tool === 'shape' ? `<div class="pal">${SHAPES.map(([k, l]) => `<button data-act="shape-${k}" aria-pressed="${S.shape === k}" style="${S.shape === k ? 'border-color:var(--accent);background:var(--accent-soft)' : ''}">${l}</button>`).join('')}</div>` : ''}
+      ${S.tool === 'shape' ? `<div class="pal">${SHAPES.map(([k, l]) => `<button class="${VOLL_SHAPES.has(k) ? lk('mathe').trim() : ''}" data-act="shape-${k}" aria-pressed="${S.shape === k}" style="${S.shape === k ? 'border-color:var(--accent);background:var(--accent-soft)' : ''}">${l}</button>`).join('')}</div>` : ''}
       ${S.clip ? '<button class="btn" data-act="paste">Kopiertes hier einfügen</button>' : ''}</section>`;
     h += `<section><h3>Seite ${i + 1} von ${S.pages.length}</h3><div class="acts">
       <button class="btn" data-act="addpage">Leere Seite</button><button class="btn" data-act="pdfpages">Seiten aus PDF</button>
@@ -2912,13 +3092,13 @@ function renderPanel() {
     if (all || S.objs.some(x => x.type === 'points')) h += examPanel();
     if (all || fields + checks) h += `<section><h3>Für Schüler ausfüllbar</h3><div class="stat"><div><b>${fields}</b>Textfelder</div><div><b>${checks}</b>Ankreuzkästchen</div></div>
       <div class="acts"><button class="btn wide" data-act="formcheck">Formular prüfen</button>
-      <button class="btn wide" data-act="evaluate">Ausgefüllte PDFs auswerten</button></div></section>`;
+      <button class="btn wide${lk('auswertung')}" data-act="evaluate">Ausgefüllte PDFs auswerten</button></div></section>`;
     h += `<section><h3>Sichern</h3><p class="mini">Alles wird automatisch unter „Meine Blätter“ auf diesem Gerät gespeichert. Fassungen für Schüler und das Lösungsblatt gibt es über „${esc(exportLabel())}“ oben rechts.</p>
       <div class="acts"><button class="btn wide" data-act="saveproj">Projekt als Datei sichern</button>
       ${all || S.pages.some(q => q.ocr) ? '<button class="btn wide" data-act="readable">Lesefreundliche Kopie anlegen</button>' : ''}</div></section>`;
     if (all) h += `<section class="wide-only"><h3>Tastenkürzel</h3><div class="kbd">${TOOLS.map(t => `<b>${t.key.toUpperCase()}</b> ${t.label}`).join(' · ')}<br><b>Strg+C/V</b> kopieren/einfügen · <b>Strg+A</b> alles auf der Seite · <b>Strg+Z</b> rückgängig · <b>Strg+B/I/U</b> beim Schreiben</div></section>`;
     h += `<section><h3>Blattwerk</h3><div class="acts"><button class="btn" data-act="about">Hilfe und Erklärungen</button><button class="btn" data-act="settings">Einstellungen</button></div>
-      <p class="mini">Version ${APP_VERSION} · arbeitet vollständig offline. Es werden keine Daten übertragen.</p>
+      <p class="mini">Version ${APP_VERSION} · arbeitet offline. Blätter und Schülerdaten verlassen das Gerät nicht.</p>
       <div class="links"><a href="datenschutz.html" data-leave="1">Datenschutz</a><a href="impressum.html" data-leave="1">Impressum</a><a href="lizenzen.html" data-leave="1">Lizenzen</a></div></section>`;
   } else {
     h += `<section><h3>Ausgewählt</h3><h2>${TYPE_NAME[o.type] || 'Element'}</h2>${o.fromLine ? '<p class="note">Der Originaltext ist abgedeckt. Löschst du diesen Text, erscheint das Original wieder.</p>' : ''}</section>`;
@@ -3172,13 +3352,13 @@ panel.addEventListener('click', async e => {
   const act = b.dataset.act; if (!act) return;
   const o = find(S.sel);
   if (act.startsWith('al-')) return align(act.slice(3));
-  if (act.startsWith('shape-')) { S.shape = act.slice(6); renderPanel(); return; }
+  if (act.startsWith('shape-')) { const k = act.slice(6); if (VOLL_SHAPES.has(k) && !needVoll('mathe')) return; S.shape = k; renderPanel(); return; }
   const actions = {
     edit: () => startEdit(S.sel), dup: dupSel, del: delSel, copy: copySel, paste: pasteClip, front: () => order(1), back: () => order(-1),
     multi: () => { S.multiMode = !S.multiMode; renderPanel(); if (S.multiMode) toast('Tippe weitere Elemente an. „Fertig“ beendet die Mehrfachauswahl.'); },
     addpage: addPage, duppage: dupPage, delpage: delPage, pageup: () => movePage(-1), pagedown: () => movePage(1), rotl: () => rotatePage(-1), rotr: () => rotatePage(1),
     pdfpages: () => $('#filePdf').click(), bgall: bgAll,
-    export: exportDialog, saveproj: saveProject, evaluate: () => $('#fileEval').click(), readable: readableCopy, horizon: addHorizon,
+    export: exportDialog, saveproj: saveProject, evaluate: () => { if (needVoll('auswertung')) $('#fileEval').click(); }, readable: readableCopy, horizon: addHorizon,
     addfont: () => $('#fileFont').click(), about: () => showHome('about'), settings: () => showHome('settings'), 'view-sol': () => setView('sol'),
     zin: () => { setZoom(S.zoom * 1.2); renderPanel(); }, zout: () => { setZoom(S.zoom / 1.2); renderPanel(); }, zfit: () => { S.fit = true; applyZoom(); renderPanel(); },
     'tbl-cells': () => { S.tableSol = false; renderPanel(); }, 'tbl-sol': () => { S.tableSol = true; renderPanel(); },
@@ -3764,7 +3944,9 @@ const HICON = {
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7.5a4 4 0 018 0V11"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
-  back: '<path d="M15 6l-6 6 6 6"/>'
+  back: '<path d="M15 6l-6 6 6 6"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  star: '<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>'
 };
 const hi = k => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${HICON[k]}</svg>`;
 let homeView = null, homeBusy = false;
@@ -3816,7 +3998,7 @@ async function homeMainHTML() {
     </div>
     ${recent.length ? `<section class="home-card"><h2>Zuletzt bearbeitet</h2><ul class="home-recent">${recent.map(m => `<li><div class="meta"><div class="nm">${esc(m.name)}</div><div class="sub">${fmtDate(m.updated)} · ${m.npages} ${m.npages === 1 ? 'Seite' : 'Seiten'}</div></div><button class="btn" data-h="recent" data-id="${esc(m.id)}">Öffnen</button></li>`).join('')}</ul></section>` : ''}
     <p class="home-priv">${hi('lock')}<span><b>Alles bleibt auf diesem Gerät.</b> Kein Konto, keine Cloud, keine Werbung. Auch ausgefüllte Schüler-PDFs werden nur hier ausgewertet – es werden keine Daten übertragen.</span></p>
-    <nav class="home-foot"><button class="btn" data-h="settings">${hi('gear')}Einstellungen</button><button class="btn" data-h="about">${hi('info')}Über Blattwerk und Hilfe</button></nav>
+    <nav class="home-foot">${(IS_APP || VOLL_TEST) && !Voll.owned ? `<button class="btn" data-h="voll">${hi('star')}Vollversion</button>` : ''}<button class="btn" data-h="settings">${hi('gear')}Einstellungen</button><button class="btn" data-h="about">${hi('info')}Über Blattwerk und Hilfe</button></nav>
   </div>`;
 }
 
@@ -3836,6 +4018,7 @@ async function settingsHTML() {
       ${pRow('Beim Start zeigen', pSeg('start', [['home', 'Startbildschirm'], ['last', 'Zuletzt bearbeitetes Blatt']]))}
       ${pRow('Darstellung', pSeg('theme', [['auto', 'Wie das Gerät'], ['light', 'Hell'], ['dark', 'Dunkel']]))}
     </section>
+    ${vollSectionHTML()}
     <section class="home-card"><h2>Neue Texte</h2>
       ${pRow('Schrift', pSeg('font', [['sans', 'Serifenlos'], ['serif', 'Serif'], ['mono', 'Mono']]))}
       ${pRow('Größe', pSeg('size', [[10, '10'], [11, '11'], [12, '12'], [14, '14'], [16, '16'], [18, '18']]))}
@@ -3868,6 +4051,7 @@ async function settingsHTML() {
   </div>`;
 }
 function setPref(key, v) {
+  if (key === 'view' && v !== 'base' && !needVoll('loesung')) return;
   P[key] = v; savePrefs();
   if (key === 'theme') applyTheme();
   if (key === 'snap') S.snap = v;
@@ -3914,9 +4098,10 @@ function aboutHTML() {
       <details><summary>Ausgefüllte PDFs auswerten</summary><p>Unter „Ausgefüllte PDFs auswerten“ wählst du die zurückgegebenen Schüler-PDFs aus. Blattwerk vergleicht die Eingaben mit den Lösungen und zeigt je Aufgabe den Anteil richtiger Antworten und häufige Fehler, je Schüler die Ergebnisse. „2,5“, „5/2“ und „2.5“ zählen gleich. Freie Antworten bitte selbst prüfen. Die Dateien werden nur gelesen und nicht gespeichert; eine Tabelle (CSV) sicherst du bei Bedarf.</p>
         <p><b>Korrigierte PDFs zurückgeben</b>: Blattwerk setzt in jedes Schüler-PDF grüne Häkchen und rote Kreuze, auf Wunsch die richtige Lösung, oben das Ergebnis und deinen Kommentar. Die Antworten lassen sich dabei einfrieren. Alle Dateien gehen gesammelt über das Teilen-Menü zurück, zum Drucken auch als eine Datei.</p></details>
       <details><summary>Lesefreundliche Kopie</summary><p>Erstellt eine zweite Fassung mit mindestens 13 pt Schrift und mehr Zeilenabstand. Inhalte rutschen nach unten und laufen bei Bedarf auf eine neue Seite. Das Original bleibt erhalten.</p></details>
-      <details><summary>Speichern und Datenschutz</summary><p>Blätter, Bilder und eigene Schriften liegen nur auf diesem Gerät. Blattwerk überträgt keine Daten, hat keine Werbung und kein Tracking. Zur Sicherung oder für ein anderes Gerät exportierst du ein Blatt als Projektdatei (Strg+S oder „Projekt als Datei sichern“).</p></details>
+      <details><summary>Speichern und Datenschutz</summary><p>Blätter, Bilder und eigene Schriften liegen nur auf diesem Gerät. Blattwerk überträgt keine Daten, hat keine Werbung und kein Tracking. Nur für die Vollversion fragt das Gerät beim ${IS_APP ? storeName() : 'App Store'} nach Preis und Kauf – das wickelt das Betriebssystem ab, Blätter und Schülerdaten sind daran nicht beteiligt. Zur Sicherung oder für ein anderes Gerät exportierst du ein Blatt als Projektdatei (Strg+S oder „Projekt als Datei sichern“).</p></details>
       <details><summary>Tastenkürzel (iPad mit Tastatur, Computer)</summary><p class="kbd">${TOOLS.map(t => `<b>${t.key.toUpperCase()}</b> ${esc(t.label)}`).join(' · ')}<br><b>Strg+C / V</b> kopieren / einfügen · <b>Strg+D</b> duplizieren · <b>Strg+A</b> alles auf der Seite · <b>Strg+Z</b> rückgängig · <b>Strg+S</b> Projektdatei · <b>Strg+B / I / U</b> beim Schreiben · <b>Pfeiltasten</b> verschieben · <b>Entf</b> löschen</p></details>
     </section>
+    ${vollSectionHTML()}
     <section class="home-card"><h2>Rechtliches</h2><div class="links"><a href="datenschutz.html" data-leave="1">Datenschutz</a><a href="impressum.html" data-leave="1">Impressum</a><a href="lizenzen.html" data-leave="1">Lizenzen</a></div></section>
   </div>`;
 }
@@ -3931,6 +4116,8 @@ homeEl.addEventListener('click', async e => {
   switch (h) {
     case 'main': case 'settings': case 'about': homeView = h; renderHome(); break;
     case 'continue': hideHome(); break;
+    case 'voll': vollDialog(); break;
+    case 'voll-restore': restoreVoll(); break;
     case 'new': newDialog(); break;
     case 'open': $('#fileOpen').click(); break;
     case 'sample': newSheet(true); break;
@@ -4755,6 +4942,7 @@ function ocrProgressDialog(total) {
 /* Erkennt alle Träger der Seiten (oder die angegebenen); bereits erkannte
    werden übersprungen, außer force. */
 async function ocrPages(pids, opts = {}) {
+  if (!needVoll('ocr')) return;
   if (OCR.busy) return;
   endEdit();
   let list = [];
@@ -5008,12 +5196,12 @@ function ocrPanel(p) {
   const more = S.pages.filter(q => q.id !== p.id && (q.sid != null || S.objs.some(o => o.page === q.id && o.type === 'image'))).length;
   return `<h3>Text erkennen</h3>
     ${done.length ? `<p class="mini">${ocrStatTxt(st)} Zeile antippen zum Bearbeiten (Text auf Fotos: Werkzeug „Text ändern“); im PDF durchsuchbar und vorlesbar.</p>` : `<p class="mini">${scan ? 'Diese Seite ist ein Scan: Der Text ist nur ein Bild.' : 'Auf dieser Seite ist ein Foto oder Bild.'} Blattwerk kann den Text darin erkennen – offline, auf diesem Gerät.</p>`}
-    <div class="acts">${todo ? `<button class="btn primary" data-act="ocr">Text erkennen</button>` : ''}${more ? `<button class="btn" data-act="ocr-all">Auf allen Seiten</button>` : ''}
-    ${done.length ? `<button class="btn" data-act="ocr-redo">Neu erkennen</button><button class="btn" data-act="ocr-drop">Verwerfen</button>` : ''}</div>`;
+    <div class="acts">${todo ? `<button class="btn primary${lk('ocr')}" data-act="ocr">Text erkennen</button>` : ''}${more ? `<button class="btn${lk('ocr')}" data-act="ocr-all">Auf allen Seiten</button>` : ''}
+    ${done.length ? `<button class="btn${lk('ocr')}" data-act="ocr-redo">Neu erkennen</button><button class="btn" data-act="ocr-drop">Verwerfen</button>` : ''}</div>`;
 }
 function ocrImagePanel(o) {
   const ok = o.ocr && o.ocr.img === o.img;
-  return `<div class="acts">${ok ? `<button class="btn" data-act="ocr-img-redo">Text neu erkennen</button><button class="btn" data-act="ocr-img-drop">Erkennung verwerfen</button>` : `<button class="btn" data-act="ocr-img">Text im Bild erkennen</button>`}</div>
+  return `<div class="acts">${ok ? `<button class="btn${lk('ocr')}" data-act="ocr-img-redo">Text neu erkennen</button><button class="btn" data-act="ocr-img-drop">Erkennung verwerfen</button>` : `<button class="btn${lk('ocr')}" data-act="ocr-img">Text im Bild erkennen</button>`}</div>
     ${ok ? `<p class="mini">${ocrStatTxt(ocrStats(o.ocr))}</p>` : ''}`;
 }
 
@@ -5535,16 +5723,18 @@ function exportDialog() {
   endEdit();
   if (exporting) return;
   if (!PL) { toast('Die PDF-Bibliothek fehlt. Bitte die App neu starten.'); return; }
-  const hasHelp = S.objs.some(o => layerOf(o) === 'help'), hasSol = hasSolutions(), chk = formCheck();
+  const hasHelp = S.objs.some(o => layerOf(o) === 'help'), hasSol = hasSolutions(), chk = formCheck(), voll = hasVoll();
   if (!hasHelp && !hasSol && !chk.warn.length) return runExport(['student']);
   const d = openDialog(`<h2 class="dh">${esc(exportLabel())}</h2>
     ${issuesHTML({ warn: chk.warn, info: [] })}
     <p class="dnote">Aus demselben Blatt entstehen getrennte Dateien.</p>
     <label class="tg"><input type="checkbox" data-v="student" checked>Schülerfassung – ausfüllbar, ohne Hilfen und Lösungen</label>
-    <label class="tg"><input type="checkbox" data-v="help" ${hasHelp ? 'checked' : 'disabled'}>Mit Hilfen – ausfüllbar${hasHelp ? '' : ' (keine Hilfen auf dem Blatt)'}</label>
-    <label class="tg"><input type="checkbox" data-v="solution" ${hasSol ? 'checked' : 'disabled'}>Lösungsblatt – Lösungen rot eingetragen${hasSol ? '' : ' (keine Lösungen hinterlegt)'}</label>
+    <label class="tg${voll ? '' : ' off'}"><input type="checkbox" data-v="help" ${hasHelp && voll ? 'checked' : 'disabled'}>Mit Hilfen – ausfüllbar${!voll ? '<span class="lk"> (Vollversion)</span>' : hasHelp ? '' : ' (keine Hilfen auf dem Blatt)'}</label>
+    <label class="tg${voll ? '' : ' off'}"><input type="checkbox" data-v="solution" ${hasSol && voll ? 'checked' : 'disabled'}>Lösungsblatt – Lösungen rot eingetragen${!voll ? '<span class="lk"> (Vollversion)</span>' : hasSol ? '' : ' (keine Lösungen hinterlegt)'}</label>
+    ${voll ? '' : '<p class="mini">Fassung mit Hilfen und Lösungsblatt gehören zur Vollversion. <button class="linkbtn" data-vmore="1">Mehr erfahren</button></p>'}
     <div class="row end"><button class="btn" data-r="0">Abbrechen</button><button class="btn primary" data-r="1">${IS_APP ? 'Teilen' : 'Exportieren'}</button></div>`, 'wide');
   d.addEventListener('click', e => {
+    if (e.target.closest('[data-vmore]')) { d.remove(); vollDialog('loesung'); return; }
     const r = e.target.closest('[data-r]'); if (!r && e.target !== d) return;
     const vs = [...d.querySelectorAll('input[data-v]:checked')].map(i => i.dataset.v);
     d.remove();
@@ -5626,6 +5816,7 @@ async function readFormValues(file) {
   return vals;
 }
 async function evaluateFiles(files) {
+  if (!needVoll('auswertung')) return;
   endEdit();
   if (!files || !files.length) return;
   if (!PL) { toast('Die PDF-Bibliothek fehlt.'); return; }
@@ -5823,6 +6014,7 @@ function textObj(pid, x, y, w, runs, size, extra) {
   o.text = plainOf(o.runs); computeBox(o); return o;
 }
 function addHorizon() {
+  if (!needVoll('loesung')) return;
   endEdit();
   const st = examStats(); if (!st.pts.length) { toast('Setze zuerst Punktekästchen an die Aufgaben.'); return; }
   snap();
@@ -6139,6 +6331,9 @@ async function loadFonts() {
 applyTheme();
 async function boot() {
   S.booting = true;
+  initVoll();
+  /* Ansicht beim Öffnen aus den Einstellungen: ohne Vollversion still beim Arbeitsblatt bleiben */
+  if (!hasVoll() && S.layer !== 'base') { S.layer = 'base'; S.view = { help: false, sol: false }; }
   buildTools();
   setTool('select');
   updViewSwitch();
@@ -6166,7 +6361,8 @@ window.__bw = { S, DB, usedImgs, ocrPages, ocrLines, ocrWords, ocrTargets, ocrPa
   compileExpr, parseMath, layoutText, textWidth, cleanState, loadProject, projectJSON, insertPdfPages, rotatePage, selectIds, copySel, pasteClip, undo, redo, snap, renderAll,
   createAt, createRect, applyRunStyle, startEdit, endEdit, find, examStats, openStored, newSheet, exportDialog, runExport, evalCSV, fixTable, fixCoord,
   P, savePrefs, showHome, hideHome, homeVisible, detectFields, eraseKeys, eraseItems, eraseRect, ensureGfx, prepareErase, splitPageAt, setSplitMode,
-  formCheck, correctedPdfs, fieldType, renderObjs, renderLines, setTool, setView, toggleMoreTools, lineAt, buildTools, offerOcr };
+  formCheck, correctedPdfs, fieldType, renderObjs, renderLines, setTool, setView, toggleMoreTools, lineAt, buildTools, offerOcr,
+  Voll, hasVoll, needVoll, vollDialog, buyVoll, restoreVoll, setLayer, addHorizon };
 })();
 </script>
 </body>

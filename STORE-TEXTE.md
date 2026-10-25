@@ -15,6 +15,12 @@ auf Google Play und umgekehrt (Apple-Richtlinie 2.3.10).
 Blattwerk ist für Lehrkräfte gemacht, die Arbeitsblätter schnell anpassen
 wollen – ohne Konto, ohne Cloud, ohne Internet.
 
+KOSTENLOS – MIT VOLLVERSION FÜR DIE EXTRAS
+• Kostenlos: PDFs bearbeiten, ausfüllbar machen und als Schülerfassung teilen
+• Vollversion als einmaliger In-App-Kauf, kein Abo: Hilfen und Lösungsblatt,
+  Mathe-Werkzeuge, Texterkennung und Auswertung ausgefüllter Schüler-PDFs
+  (unten mit ★ markiert)
+
 DATENSCHUTZ VON ANFANG AN
 • Alles bleibt auf deinem Gerät – Blätter, Fotos und auch ausgefüllte
   Schüler-PDFs bei der Auswertung
@@ -27,7 +33,7 @@ ARBEITSBLÄTTER ANPASSEN
 • Lösungen im Verlagsmaterial nur für die Schülerfassung ausblenden
 • Eigene Aufgaben, Hinweise und Bilder einfügen, auch per Foto
 • Fotografierte Arbeitsblätter gerade ziehen, zuschneiden und aufhellen
-• Texterkennung für Scans und Fotos – offline: Text ändern, durchsuchbar und vorlesbar machen
+• ★ Texterkennung für Scans und Fotos – offline: Text ändern, durchsuchbar und vorlesbar machen
 • Ausschnitte aus Schulbuch-PDFs mit Quellenangabe
 • Textstellen farbig markieren, Lösungen oder alte Aufgaben abdecken
 
@@ -47,19 +53,20 @@ VORLAGEN MIT PASSENDEM HINTERGRUND
 • Schreiblinien für ausgedruckte Blätter
 
 MATHEMATIK INKLUSIVE
-• Formeln mit Brüchen, Wurzeln, Potenzen und Indizes
+• ★ Formeln mit Brüchen, Wurzeln, Potenzen und Indizes
 • Wertetabellen mit ausfüllbaren Zellen – Lösungen auf Knopfdruck aus dem Funktionsterm
-• Funktionsgraphen im Koordinatensystem, Punkte, Strecken, Pfeile und Winkel
+• ★ Funktionsgraphen im Koordinatensystem, Kreise, Dreiecke, Vierecke und Winkel
+• Strecken, Pfeile, Rechtecke und Rechenkästchen
 • Zeichen wie π, √, ≤, ≥, ∞ oder Δ landen sauber im PDF
 
 EIN BLATT – DREI FASSUNGEN
-• Hilfen und Lösungen auf eigenen Ebenen
-• Export als Schülerfassung, mit Hilfen oder als Lösungsblatt
-• QR-Code zur Selbstkontrolle, funktioniert ohne Internet
+• ★ Hilfen und Lösungen auf eigenen Ebenen
+• ★ Export als Schülerfassung, mit Hilfen oder als Lösungsblatt
+• ★ QR-Code zur Selbstkontrolle, funktioniert ohne Internet
 
 AUSWERTEN UND BEWERTEN
-• Ausgefüllte Schüler-PDFs einlesen: Übersicht je Aufgabe und je Schüler
-• Korrigierte PDFs mit Häkchen, Lösungen und Kommentar zurückgeben
+• ★ Ausgefüllte Schüler-PDFs einlesen: Übersicht je Aufgabe und je Schüler
+• ★ Korrigierte PDFs mit Häkchen, Lösungen und Kommentar zurückgeben
 • Klassenarbeiten mit Punkten, Anforderungsbereichen, Notenschlüssel und
   Erwartungshorizont
 • Lesefreundliche Kopie mit größerer Schrift auf Knopfdruck
@@ -77,32 +84,44 @@ EINFACH ZU BEDIENEN
 
 - Kategorie: Bildung (zweite Kategorie: Produktivität)
 - Altersfreigabe: 4+ / USK 0
-- Preis: frei wählbar; im App Store später änderbar, bei Google Play nicht von
-  kostenpflichtig auf kostenlos und zurück
+- Preis der App: **kostenlos** (Google Play: eine kostenlose App lässt sich
+  später nicht mehr kostenpflichtig machen – mit dem In-App-Kauf egal)
+- In-App-Kauf: **Vollversion**, nicht verbrauchbar, 3,99 €,
+  Produkt-ID `de.blattwerk.app.vollversion` (Einrichtung: EINRICHTUNG.md, Abschnitt 5)
+- Werbung: keine
 
 ## Datenschutzangaben
 
-- App Store „App-Datenschutz“: **Es werden keine Daten erfasst.**
-- Google Play „Datensicherheit“: Keine Daten erhoben, keine Daten geteilt.
+- App Store „App-Datenschutz“: **Es werden keine Daten erfasst.** Den Kauf
+  wickelt Apple ab; Blattwerk selbst speichert nur auf dem Gerät, dass gekauft
+  wurde, und sendet nichts. „Kaufhistorie“ daher nicht ankreuzen.
+- Google Play „Datensicherheit“: Keine Daten erhoben, keine Daten geteilt
+  (den Kauf wickelt Google Play ab, Blattwerk sendet nichts).
   Daten werden nicht übertragen. Hinweis „Daten sind während der Übertragung
   verschlüsselt“: nicht zutreffend (keine Übertragung).
 - Datenschutz-URL: siehe EINRICHTUNG.md, Abschnitt 4.
 
 ## Prüfnotizen für Apple (Notes for Review)
 
-    Blattwerk works fully offline. No account, no network access, no data
-    collection.
+    Blattwerk works offline. No account, no server, no data collection.
 
-    Quick test (about 30 seconds):
-    1. The app opens with a sample worksheet.
-    2. Tap "PDF exportieren" (top right) – the share sheet opens; choose
-       "Save to Files". The saved PDF contains fillable fields and check boxes.
-    3. Tap "Neu", choose "Koordinaten", tap "Blatt anlegen" – a new worksheet
-       with a coordinate grid and a fillable header appears.
-    4. Choose the tool "Text" in the toolbar and tap on the page to type.
-    5. On the sample sheet, "PDF exportieren" offers three versions (student,
-       with hints, answer key). "Ausgefüllte PDFs auswerten" reads filled-in
-       PDFs locally; nothing is uploaded or stored.
+    The app is free. A one-time, non-consumable in-app purchase "Vollversion"
+    (de.blattwerk.app.vollversion) unlocks teacher extras: versions with hints
+    and answer key, math tools (formula, coordinate system, geometric shapes),
+    text recognition (OCR) and evaluation of filled-in student PDFs.
+    Everything else stays free.
+
+    Quick test (about one minute):
+    1. The app opens on its home screen. Tap "Beispielblatt" (sample sheet).
+    2. Tap "Teilen" (top right). The share sheet opens; choose "Save to
+       Files". The saved PDF contains fillable fields and check boxes.
+    3. Tap "+ Lösung" at the top. Locked features carry a small lock icon;
+       tapping one opens the purchase sheet with the price, "Vollversion
+       kaufen" and "Käufe wiederherstellen" (restore purchases).
+    4. After the purchase, "Teilen" offers three versions: student, with
+       hints, answer key.
+    5. Restore purchases is also available at any time: home screen →
+       "Einstellungen" → "Vollversion" → "Käufe wiederherstellen".
 
     The camera is only used when the user inserts a photo into a worksheet
     (Bild → Take Photo). Photos are never uploaded.
@@ -116,5 +135,8 @@ EINFACH ZU BEDIENEN
 5. Exportdialog mit Schülerfassung, Hilfen und Lösungsblatt
 6. Auswertung ausgefüllter Schüler-PDFs
 7. Erwartungshorizont mit Notenschlüssel
+
+Im Untertitel der Screenshots 5–7 „Vollversion“ erwähnen, damit niemand
+überrascht ist. Für die Prüfung des In-App-Kaufs: `vollversion-review.png`.
 
 Pflichtgrößen im App Store: 6,9″ iPhone und 13″ iPad.

@@ -70,7 +70,73 @@ Die Stores verlangen eine Datenschutz-URL. Zwei Wege:
   `make-legal-pages.js` einen Abschnitt „Blattwerk“ in der Übersicht
   ergänzen. Dann gibt es eine Seite „Wisdompeak Apps“ für alle Apps.
 
-## 5. Vor der ersten Einreichung auf echten Geräten prüfen
+## 5. Vollversion als In-App-Kauf (seit 1.3.0)
+
+Blattwerk ist kostenlos. Ein **einmaliger Kauf** (kein Abo) schaltet die
+Lehrer-Extras frei. Ohne Server gibt es keine laufenden Kosten: Der Kauf wird
+auf dem Gerät vermerkt, „Käufe wiederherstellen“ holt ihn auf neue Geräte.
+
+| Gratis | Vollversion (3,99 €) |
+|---|---|
+| PDF öffnen, Text antippen und ändern, Entfernen, Abdecken, Markieren | Ansicht „+ Hilfen“/„+ Lösung“, Export mit Hilfen und als Lösungsblatt |
+| Text, Bild, Ausschnitt, Textfeld, Ankreuzen, Tabelle, Linien, Punkte | QR-Code zur Selbstkontrolle, Erwartungshorizont |
+| Formen: Strecke, Pfeile, Rechteck, Ellipse, Rechenkästchen | Formel, Koordinaten mit Funktionsgraphen, Kreis, Dreieck, Vierecke, Winkel |
+| Lücken als Felder erkennen, Formular prüfen, Hintergründe, Kopfzeile | Texterkennung (Scans und Fotos) |
+| Schülerfassung teilen, Projektdatei, Lesefreundliche Kopie | Ausgefüllte PDFs auswerten, korrigierte PDFs zurückgeben |
+
+Gesperrt ist nur das **Anlegen**: Ein Blatt mit Formeln oder Lösungen, das
+jemand weitergibt, lässt sich auch gratis öffnen, verschieben und als
+Schülerfassung teilen.
+
+**Produkt-ID in beiden Stores:** `de.blattwerk.app.vollversion`
+(steht so in `index.html`, `VOLL_ID`; validate.js prüft, dass beides passt).
+
+### App Store Connect
+
+1. **Verträge:** Unter *Geschäftliches* (Business) muss die Vereinbarung für
+   **kostenpflichtige Apps** aktiv sein, mit Bank- und Steuerangaben. Ohne sie
+   liefert der Store nicht einmal in TestFlight ein Produkt – die App meldet
+   dann „App Store nicht erreichbar“.
+2. **Small Business Program** beantragen: 15 % statt 30 % Provision.
+3. App → *Monetarisierung* → **In-App-Käufe** → „+“:
+   - Typ: **Nicht-verbrauchbar** (Non-Consumable)
+   - Referenzname: `Vollversion`
+   - Produkt-ID: `de.blattwerk.app.vollversion` (genau so, später nicht änderbar)
+4. **Preis:** 3,99 € (Basisland Deutschland), alle Länder.
+5. **Lokalisierung Deutsch:** Anzeigename `Vollversion`,
+   Beschreibung `Lösungen, Mathe, Texterkennung, Auswertung` (max. 45 Zeichen).
+6. **Prüfinformationen:** Screenshot `vollversion-review.png` (der
+   Kauf-Hinweis, liegt nach `node smoketest.js` in `test/ausgabe/`) und die
+   Notiz aus STORE-TEXTE.md.
+7. **Familienfreigabe:** Bewusst entscheiden – einmal eingeschaltet, lässt
+   sie sich nicht wieder ausschalten.
+8. **Beim Einreichen der Version** unter *In-App-Käufe und Abonnements* die
+   Vollversion auswählen. Sonst prüft Apple sie nicht mit, und die App wird
+   abgelehnt, weil der Kauf nicht funktioniert.
+9. Die App-ID braucht nichts Neues: „In-App Purchase“ ist bei jeder
+   expliziten App-ID schon eingeschaltet; Profil und Secrets bleiben.
+
+**Testen in TestFlight:** Käufe dort sind kostenlos (Sandbox). Ablauf:
+Formel antippen → Hinweis → Kaufen → mit der Apple-ID bestätigen →
+„Danke! Die Vollversion ist freigeschaltet.“ Danach App löschen, neu
+installieren, Einstellungen → Vollversion → **Käufe wiederherstellen**.
+
+### Google Play
+
+1. Ein **Zahlungsprofil** (Händlerkonto) in der Play Console anlegen.
+2. Zuerst einen Build 1.3.0 hochladen (interner Test genügt): Play lässt
+   In-App-Produkte erst anlegen, wenn ein Build die Billing-Berechtigung hat
+   (bringt das Kauf-Plugin mit).
+3. *Monetarisieren* → *Produkte* → **In-App-Produkte** → Produkt erstellen:
+   Produkt-ID `de.blattwerk.app.vollversion`, Name `Vollversion`, Preis 3,99 €,
+   **aktivieren**.
+4. Zum Testen ohne Bezahlung: *Einstellungen* → **Lizenztests** → eigenes
+   Google-Konto eintragen.
+
+Auf Android läuft derselbe Code über Google Play Billing; die App ist dort
+ebenfalls kostenlos mit Vollversion zum Freischalten.
+
+## 6. Vor der ersten Einreichung auf echten Geräten prüfen
 
 Diese Punkte kann kein automatischer Test abdecken:
 
@@ -83,8 +149,11 @@ Diese Punkte kann kein automatischer Test abdecken:
 - [ ] Zwei-Finger-Zoom auf dem Blatt
 - [ ] Android: Zurück-Taste schließt Dialoge, beendet die Bearbeitung, dann die App
 - [ ] Datenschutz-Link in der App → „Zurück zur App“ führt zurück zum Blatt
+- [ ] Vollversion kaufen (TestFlight-Sandbox bzw. Play-Lizenztest), App neu
+      installieren, „Käufe wiederherstellen“ – siehe Abschnitt 5
+- [ ] Kauf abbrechen: keine Fehlermeldung, Hinweis bleibt offen
 
-## 6. Bekannte offene Punkte (bewusst nach 1.0)
+## 7. Bekannte offene Punkte (bewusst nach 1.0)
 
 - **Datensicherheit auf iOS:** Wie bei FairMix kann iOS den WebView-Speicher
   unter Speicherdruck leeren. Blattwerk speichert in IndexedDB (deutlich mehr

@@ -192,7 +192,7 @@ async function main() {
     (await page.locator('#home [data-h="new"], #home [data-h="open"], #home [data-h="sample"], #home [data-h="lib"], #home [data-h="settings"], #home [data-h="about"]').count()) === 6);
   check('Erster Start: kein „Weiterarbeiten“', (await page.locator('#home [data-h="continue"]').count()) === 0);
   await page.click('#home [data-h="about"]');
-  check('Über Blattwerk: Erklärungen zu allen Bereichen', (await page.locator('#home details').count()) >= 9 && /Ausgefüllte PDFs auswerten/.test(await page.textContent('#home')) && /Version 1\.2/.test(await page.textContent('#home')));
+  check('Über Blattwerk: Erklärungen zu allen Bereichen', (await page.locator('#home details').count()) >= 9 && /Ausgefüllte PDFs auswerten/.test(await page.textContent('#home')) && new RegExp('Version ' + require('./package.json').version.replace(/\./g, '\\.')).test(await page.textContent('#home')));
   await page.keyboard.press('Escape');
   await page.waitForSelector('#home [data-h="sample"]', { timeout: 3000 }).catch(() => {});
   check('Escape führt zurück zum Startbildschirm', (await page.locator('#home [data-h="sample"]').count()) === 1);
@@ -1180,10 +1180,32 @@ async function main() {
        wird trotzdem sofort aufgerufen. */
     const add = document.addEventListener.bind(document);
     document.addEventListener = (type, fn, opt) => type === 'deviceready' ? setTimeout(fn, 30) : add(type, fn, opt);
+    /* Nachbau von cordova-plugin-purchase 13: nur, was Blattwerk aufruft */
+    window.__kauf = { orders: 0, finished: 0, registered: null, platforms: null };
+    const h = { productUpdated: [], approved: [], finished: [], receiptUpdated: [] };
+    const product = { id: 'de.blattwerk.app.vollversion', owned: false, pricing: { price: '3,99 €' },
+      getOffer: () => ({ order: async () => { window.__kauf.orders++; const t = { products: [{ id: product.id }], finish: () => { window.__kauf.finished++; } }; setTimeout(() => h.approved.forEach(f => f(t)), 20); } }) };
+    const when = {};
+    for (const k of Object.keys(h)) when[k] = f => { h[k].push(f); return when; };
+    window.CdvPurchase = {
+      ProductType: { NON_CONSUMABLE: 'non consumable' }, Platform: { APPLE_APPSTORE: 'ios-appstore', GOOGLE_PLAY: 'android-playstore' },
+      LogLevel: { WARNING: 1 }, ErrorCode: { PAYMENT_CANCELLED: 6777006 },
+      store: { verbosity: 0, register: p => { window.__kauf.registered = p; }, when: () => when, error: () => {},
+        initialize: async pl => { window.__kauf.platforms = pl; setTimeout(() => h.productUpdated.forEach(f => f(product)), 10); return []; },
+        get: id => id === product.id ? product : undefined, owned: () => false, update: async () => {}, restorePurchases: async () => undefined }
+    };
   });
   await app.goto(base);
   await app.waitForSelector('html[data-ready="1"]', { timeout: 20000 });
   await app.evaluate(() => window.__bw.newSheet(true));
+  await app.waitForTimeout(100);
+  const k0 = await app.evaluate(() => ({ reg: window.__kauf.registered, pl: window.__kauf.platforms, price: window.__bw.Voll.price, voll: window.__bw.hasVoll(), lk: !!document.querySelector('.tool.lk') }));
+  check('App: Vollversion beim Store angemeldet (nicht verbrauchbar, App Store), Preis vom Store, gesperrt', k0.reg && k0.reg[0].id === 'de.blattwerk.app.vollversion' && k0.reg[0].type === 'non consumable' && k0.pl && k0.pl[0] === 'ios-appstore' && k0.price === '3,99 €' && !k0.voll && k0.lk, JSON.stringify(k0));
+  await app.evaluate(() => window.__bw.vollDialog('loesung'));
+  await app.click('.dlg [data-voll="buy"]');
+  await app.waitForFunction(() => window.__bw.hasVoll(), null, { timeout: 3000 }).catch(() => {});
+  const k1 = await app.evaluate(() => ({ voll: window.__bw.hasVoll(), o: window.__kauf.orders, f: window.__kauf.finished, saved: localStorage.getItem('bw:voll'), dlg: !!document.querySelector('.dlg .voll'), lk: !!document.querySelector('.lk') }));
+  check('App: Kauf über den Store schaltet frei und schließt die Transaktion ab', k1.voll && k1.o === 1 && k1.f === 1 && k1.saved === '1' && !k1.dlg && !k1.lk, JSON.stringify(k1));
   await app.click('#btnExport');
   await app.click('.dlg [data-r="1"]');
   await app.waitForFunction(() => window.__shared.length === 1, null, { timeout: 40000 });
@@ -1411,6 +1433,140 @@ async function main() {
     await tp.setViewportSize({ width: 820, height: 1180 }); await tp.waitForTimeout(300);
     await tp.screenshot({ path: path.join(OUT, 'ipad-hochkant.png') });
     await tctx.close();
+  }
+
+  /* ================================================================ */
+  section('Vollversion: In-App-Kauf (Store simuliert mit ?kauf=test)');
+  check('Im Browser ohne Store ist alles frei', await S('B.hasVoll() && !document.querySelector(".tool.lk")'));
+  {
+    const vctx = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
+    const vp = await vctx.newPage();
+    const verrs = [];
+    vp.on('pageerror', e => verrs.push('Seitenfehler: ' + e.message));
+    vp.on('console', m => { if (m.type() === 'error') verrs.push('Konsole: ' + m.text()); });
+    await vp.addInitScript(() => { try { if (!localStorage.getItem('bw:prefs')) localStorage.setItem('bw:prefs', JSON.stringify({ mode: 'all', start: 'last' })); } catch (e) {} });
+    const VS = expr => vp.evaluate(`(() => { const S = window.__bw.S, B = window.__bw; return (${expr}); })()`);
+    const paywall = () => vp.locator('.dlg .voll').count().then(n => n === 1);
+    const closePay = async () => { if (await paywall()) await vp.click('.dlg [data-voll="close"]'); };
+    const vtoast = () => vp.evaluate(() => [...document.querySelectorAll('.tst span')].map(s => s.textContent).join(' | '));
+    const kauf = base + '?kauf=test';
+    await vp.goto(kauf);
+    await vp.waitForSelector('html[data-ready="1"]', { timeout: 20000 });
+    check('Startbildschirm gratis: Knopf „Vollversion“', (await vp.locator('#home [data-h="voll"]').count()) === 1);
+    await VS('B.hideHome()');
+    check('Gratis: Vollversion nicht freigeschaltet, Preis 3,99 €', await VS('!B.hasVoll() && B.Voll.price === "3,99 €"'));
+    check('Gratis: Formel, Koordinaten, QR-Code mit Schloss; Text, Textfeld, Tabelle, Punkte ohne', await VS(`['formula','coord','qr'].every(t => document.querySelector('[data-tool="' + t + '"]').classList.contains('lk')) && ['text','field','table','points','shape','check'].every(t => !document.querySelector('[data-tool="' + t + '"]').classList.contains('lk'))`));
+    check('Gratis: „+ Hilfen“ und „+ Lösung“ mit Schloss', await VS(`['help','sol'].every(k => document.querySelector('#viewSeg [data-vm="' + k + '"]').classList.contains('lk')) && !document.querySelector('#viewSeg [data-vm="base"]').classList.contains('lk')`));
+
+    await vp.click('[data-tool="formula"]');
+    check('Formel antippen öffnet den Kauf-Hinweis, Werkzeug bleibt „Auswählen“', await paywall() && (await VS('S.tool')) === 'select');
+    check('Kauf-Hinweis nennt die Funktion, alle vier Bereiche, Preis und Wiederherstellen', /Mathe-Werkzeuge/.test(await vp.textContent('.dlg .voll li.on')) && (await vp.locator('.dlg .voll li').count()) === 4 &&
+      /3,99 €/.test(await vp.textContent('.dlg [data-voll="buy"]')) && (await vp.locator('.dlg [data-voll="restore"]').count()) === 1);
+    await vp.screenshot({ path: path.join(OUT, 'vollversion-hinweis.png') });
+    await vp.click('.dlg [data-voll="close"]');
+    check('„Später“ schließt den Hinweis', !(await paywall()));
+    await vp.click('.page'); await vp.keyboard.press('Escape');
+    await vp.keyboard.press('y');
+    check('Tastenkürzel für Formel führt ebenfalls zum Hinweis', await paywall() && (await VS('S.tool')) === 'select');
+    await closePay();
+
+    await vp.click('#viewSeg [data-vm="sol"]');
+    check('„+ Lösung“ gesperrt: Hinweis, Ansicht bleibt Arbeitsblatt', await paywall() && (await VS('S.layer')) === 'base' && (await vp.getAttribute('#viewSeg [data-vm="base"]', 'aria-pressed')) === 'true');
+    await closePay();
+    await vp.selectOption('#viewSel', 'help').catch(() => {});
+    check('Auswahlliste (schmal) gesperrt: bleibt beim Arbeitsblatt', (await VS('S.layer')) === 'base' && (await vp.inputValue('#viewSel')) === 'base');
+    await closePay();
+
+    await vp.click('[data-tool="shape"]');
+    check('Formen: Strecke, Rechteck frei; Dreieck, Kreis, Winkel mit Schloss', await VS(`!document.querySelector('[data-act="shape-line"]').classList.contains('lk') && !document.querySelector('[data-act="shape-rect"]').classList.contains('lk') && ['triangle','circle','angle'].every(k => document.querySelector('[data-act="shape-' + k + '"]').classList.contains('lk'))`));
+    await vp.click('[data-act="shape-triangle"]');
+    check('Dreieck wählen führt zum Hinweis, Form bleibt Strecke', await paywall() && (await VS('S.shape')) === 'line');
+    await closePay();
+    await vp.click('[data-act="shape-rect"]');
+    check('Rechteck bleibt frei wählbar', (await VS('S.shape')) === 'rect' && !(await paywall()));
+    await vp.click('[data-tool="select"]');
+
+    const tb = await VS(`(() => { const o = S.objs.find(o => o.type === 'text' && (o.layer || 'base') === 'base'); B.selectIds([o.id]); B.setLayer('sol'); return [o.layer || 'base', S.layer]; })()`);
+    check('Element auf „Lösung“ legen gesperrt', tb[0] === 'base' && tb[1] === 'base' && await paywall(), tb);
+    await closePay();
+    await VS('B.selectIds([])');
+
+    const files = await exportFiles('voll-gratis', ['student', 'help', 'solution'], vp);
+    check('Export gratis: Schülerfassung ja, Hilfen und Lösungsblatt gesperrt', files.dialog && !!files.student && !files.help && !files.solution, Object.keys(files).join(','));
+
+    let chooser = false; const onFc = () => { chooser = true; };
+    vp.on('filechooser', onFc);
+    await VS('B.hideHome()');
+    const ev = vp.locator('#panel [data-act="evaluate"]');
+    if (await ev.count()) { check('„Ausgefüllte PDFs auswerten“ mit Schloss', await ev.evaluate(b => b.classList.contains('lk'))); await ev.click(); }
+    else await VS('document.querySelector("#panel") && B.needVoll("auswertung")');
+    await vp.waitForTimeout(300);
+    check('Auswerten gesperrt: Hinweis statt Dateiauswahl', await paywall() && !chooser && /Rücklauf/.test(await vp.textContent('.dlg .voll li.on')));
+    vp.off('filechooser', onFc);
+    await closePay();
+
+    await VS(`B.ocrPages([S.cur])`);
+    check('Texterkennung gesperrt', await paywall() && /Texterkennung/.test(await vp.textContent('.dlg .voll li.on')) && await VS('!S.pages.some(p => p.ocr)'));
+    await closePay();
+    const np = await VS('S.pages.length');
+    await VS('B.addHorizon()');
+    check('Erwartungshorizont gesperrt', await paywall() && (await VS('S.pages.length')) === np);
+    await closePay();
+    check('Vorhandenes Koordinatensystem bleibt sichtbar und wählbar', await VS(`(() => { const o = S.objs.find(o => ['coord', 'formula'].includes(o.type) && (o.layer || 'base') === 'base'); if (!o) return false; B.selectIds([o.id]); return !!document.querySelector('.obj[data-id="' + o.id + '"]') && S.sel === o.id; })()`));
+    await VS('B.selectIds([])');
+
+    await VS(`B.showHome('settings')`);
+    check('Einstellungen: Abschnitt Vollversion mit Kaufen und Wiederherstellen', /Vollversion/.test(await vp.textContent('#home')) && (await vp.locator('#home [data-h="voll"], #home [data-h="voll-restore"]').count()) === 2);
+    await vp.click('#home [data-h="voll-restore"]');
+    await vp.waitForTimeout(300);
+    check('Wiederherstellen ohne Kauf: Meldung, bleibt gesperrt', !(await VS('B.hasVoll()')) && /keine Vollversion gekauft/.test(await vtoast()), await vtoast());
+    await vp.click('#home [data-h="voll"]');
+    await vp.click('.dlg [data-voll="buy"]');
+    await vp.click('.dlg [data-r="1"]');
+    await vp.waitForTimeout(200);
+    check('Kauf: freigeschaltet, Dank, Hinweis geschlossen, gespeichert', await VS('B.hasVoll()') && /Danke/.test(await vtoast()) && !(await paywall()) && (await vp.evaluate(() => localStorage.getItem('bw:voll'))) === '1');
+    check('Nach dem Kauf: Einstellungen zeigen „Freigeschaltet“', /Freigeschaltet/.test(await vp.textContent('#home')));
+    await VS('B.hideHome()');
+    check('Nach dem Kauf: keine Schlösser mehr', await VS(`!document.querySelector('.lk')`));
+    await vp.click('[data-tool="formula"]');
+    check('Nach dem Kauf: Formel-Werkzeug wählbar', (await VS('S.tool')) === 'formula' && !(await paywall()));
+    await vp.click('[data-tool="select"]');
+    await vp.click('#viewSeg [data-vm="sol"]');
+    check('Nach dem Kauf: „+ Lösung“ wählbar', (await VS('S.layer')) === 'sol');
+    const f2 = await exportFiles('voll-gekauft', ['student', 'help', 'solution'], vp);
+    check('Nach dem Kauf: alle drei Fassungen', !!(f2.student && f2.help && f2.solution), Object.keys(f2).join(','));
+
+    await vp.reload(); await vp.waitForSelector('html[data-ready="1"]', { timeout: 20000 });
+    check('Kauf bleibt nach Neustart erhalten', await VS('B.hasVoll()'));
+
+    /* Gerätespeicher verloren: wieder gesperrt, Ansicht „+ Lösung“ aus den Einstellungen fällt still aufs Arbeitsblatt */
+    await vp.evaluate(() => { localStorage.removeItem('bw:voll'); const p = JSON.parse(localStorage.getItem('bw:prefs') || '{}'); p.view = 'sol'; localStorage.setItem('bw:prefs', JSON.stringify(p)); });
+    await vp.reload(); await vp.waitForSelector('html[data-ready="1"]', { timeout: 20000 });
+    check('Ohne gespeicherten Kauf wieder gesperrt; Start ohne Hinweis im Arbeitsblatt', !(await VS('B.hasVoll()')) && (await VS('S.layer')) === 'base' && !(await paywall()));
+    await VS(`B.showHome('settings')`);
+    await vp.click('#home [data-h="voll-restore"]');
+    await vp.waitForTimeout(300);
+    check('Käufe wiederherstellen schaltet frei', await VS('B.hasVoll()') && /Danke/.test(await vtoast()));
+
+    /* Schmales Gerät und dunkle Darstellung */
+    await vp.evaluate(() => localStorage.removeItem('bw:voll'));
+    await vp.setViewportSize({ width: 390, height: 844 });
+    await vp.emulateMedia({ colorScheme: 'dark' });
+    await vp.reload(); await vp.waitForSelector('html[data-ready="1"]', { timeout: 20000 });
+    await VS('B.vollDialog("loesung")');
+    check('iPhone: Kauf-Hinweis passt in die Breite, Knöpfe sichtbar', await vp.evaluate(() => { const b = document.querySelector('.dlg .voll').getBoundingClientRect(); return b.left >= 0 && b.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; }) && await vp.isVisible('.dlg [data-voll="buy"]'));
+    await vp.screenshot({ path: path.join(OUT, 'vollversion-iphone-dunkel.png') });
+    check('Keine Fehler im Kauf-Ablauf', verrs.length === 0, verrs.slice(0, 3).join(' / '));
+    await vctx.close();
+    /* Bild für die Prüfung des In-App-Kaufs in App Store Connect (iPhone, 3-fach) */
+    const rctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, colorScheme: 'light' });
+    const rp = await rctx.newPage();
+    await rp.addInitScript(() => { try { localStorage.setItem('bw:prefs', JSON.stringify({ start: 'last' })); } catch (e) {} });
+    await rp.goto(kauf); await rp.waitForSelector('html[data-ready="1"]', { timeout: 20000 });
+    await rp.evaluate(() => { window.__bw.hideHome(); window.__bw.vollDialog(); });
+    await rp.waitForTimeout(200);
+    await rp.screenshot({ path: path.join(OUT, 'vollversion-review.png') });
+    await rctx.close();
   }
 
   check('Keine Fehler während des ganzen Laufs', errs.length === 0, errs.slice(0, 3).join(' / '));

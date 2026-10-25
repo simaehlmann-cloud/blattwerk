@@ -99,6 +99,7 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
     <li>Ihre Einstellungen, etwa Farben, Schriftgröße und Darstellung</li>
     <li>Bilder und Fotos, die Sie in ein Blatt einfügen</li>
     <li>den Namen jedes Blatts und den Zeitpunkt der letzten Änderung</li>
+    <li>den Vermerk, ob die Vollversion gekauft wurde</li>
   </ul>
   <p>
     Diese Daten liegen im geschützten Speicher der App (IndexedDB) und werden zu keinem
@@ -146,15 +147,23 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
 
   <h2>6. Verbindungen ins Internet</h2>
   <p>
-    Die App baut von sich aus keine Netzwerkverbindungen auf. Alle verwendeten Bibliotheken
-    (pdf.js, pdf-lib, fontkit, qrcode-generator, Tesseract) und Schriften (Noto) sind Teil der App und werden nicht von
+    Die App baut keine Verbindungen zu Servern des Anbieters oder Dritter auf. Alle verwendeten Bibliotheken
+    (pdf.js, pdf-lib, fontkit, qrcode-generator, Tesseract, cordova-plugin-purchase) und Schriften (Noto) sind Teil der App und werden nicht von
     fremden Servern geladen. Die Lizenzen finden Sie in der App unter „Lizenzen“.
   </p>
-
-  <h2>7. Bezug über einen App-Vertrieb</h2>
   <p>
-    Beim Herunterladen der App über einen App-Vertrieb verarbeitet dessen Betreiber eigenständig
-    Daten (etwa Konto, Gerät und Zeitpunkt des Downloads). Darauf hat der Anbieter dieser App
+    Einzige Ausnahme ist die Vollversion: Beim Start und beim Kauf fragt die App über die
+    Kaufschnittstelle des Betriebssystems (StoreKit von Apple bzw. Google Play Billing) den Preis
+    und den Kaufstatus der Vollversion ab. Kauf, Bezahlung und „Käufe wiederherstellen“ wickelt
+    allein der jeweilige Store-Betreiber mit Ihrem Konto ab. Der Anbieter erhält dabei keine
+    personenbezogenen Daten, sondern nur die üblichen zusammengefassten Verkaufszahlen.
+    Arbeitsblätter, Bilder und Daten von Schülerinnen und Schülern sind daran nicht beteiligt.
+  </p>
+
+  <h2>7. Bezug über einen App-Vertrieb und In-App-Kauf</h2>
+  <p>
+    Beim Herunterladen der App und beim Kauf der Vollversion über einen App-Vertrieb verarbeitet
+    dessen Betreiber eigenständig Daten (etwa Konto, Gerät, Zahlungsdaten und Zeitpunkt). Darauf hat der Anbieter dieser App
     keinen Einfluss. Es gelten die Datenschutzbestimmungen des jeweiligen Betreibers.
   </p>
 
@@ -230,6 +239,7 @@ def lizenzen():
         ("@pdf-lib/fontkit 1.1.1", "Devon Govett, Andrew Dillon, MIT-Lizenz", "lib/licenses/fontkit-LICENSE.txt"),
         ("qrcode-generator 1.4.4", "Kazuhiko Arase, MIT-Lizenz. Das Wort „QR Code“ ist eine eingetragene Marke der DENSO WAVE INCORPORATED.", "lib/licenses/qrcode-generator-LICENSE.txt"),
         ("tesseract.js 7.0.0", "Texterkennung im Browser, Apache License 2.0", "lib/licenses/tesseract.js-LICENSE.md"),
+        ("cordova-plugin-purchase 13.19.1", "Jean-Christophe Hoelt und Mitwirkende, MIT-Lizenz (Kaufschnittstelle für die Vollversion)", "lib/licenses/cordova-plugin-purchase-LICENSE.txt"),
         ("tesseract.js-core 6.1.2 (Tesseract OCR) mit deutschem Sprachmodell (tessdata_best, int)", "Tesseract OCR: Google und Mitwirkende; Sprachmodell aus tessdata_best; Apache License 2.0", "lib/licenses/tesseract.js-core-LICENSE.txt"),
         ("Noto Sans, Noto Serif, Noto Sans Mono, Noto Sans Math", "The Noto Project Authors, SIL Open Font License 1.1 (auf die benötigten Schriftzeichen reduziert)", "fonts/OFL.txt"),
         ("Liberation Sans (mit pdf.js ausgeliefert)", "SIL Open Font License 1.1", "lib/pdfjs/standard_fonts/LICENSE_LIBERATION"),

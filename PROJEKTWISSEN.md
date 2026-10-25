@@ -1,4 +1,4 @@
-# Blattwerk – Projektwissen, Stand 1.2.0
+# Blattwerk – Projektwissen, Stand 1.3.0
 
 PDF-Editor für Arbeitsblätter (Lehrkräfte), iOS und Android über Cordova,
 gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
@@ -94,10 +94,35 @@ gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
 - Startbildschirm: Datenschutz-Hinweis (`.home-priv`)
 - Bedientest mit Referendaren: `BEDIENTEST.md`
 
+## Vollversion (seit 1.3.0)
+
+- App kostenlos, einmaliger In-App-Kauf `de.blattwerk.app.vollversion`
+  (nicht verbrauchbar, 3,99 €), cordova-plugin-purchase 13.19.1 (genau
+  gepinnt), StoreKit 1 auf iOS, Google Play Billing auf Android
+- Code im Abschnitt „Vollversion“ vor `buildTools()`: `VOLL_FEATURES`
+  (loesung, mathe, ocr, auswertung), `VOLL_TOOLS` (formula, coord → mathe;
+  qr → loesung), `VOLL_SHAPES` (Kreis, Dreieck, Vierecke, Winkel)
+- `hasVoll()`: gekauft **oder** Browser ohne Store (dort alles frei).
+  `needVoll(feat)` zeigt sonst den Hinweis `vollDialog(feat)` und gibt false
+- Sperrstellen: `setTool`, Formen-Auswahl, `setView`, `setLayer`,
+  `setPref('view')`, Exportdialog (Hilfen/Lösungsblatt), `addHorizon`,
+  Auswerten (Knopf und `evaluateFiles`), `ocrPages`. Nur Anlegen ist gesperrt,
+  Vorhandenes bleibt bedienbar. Ansicht aus den Einstellungen fällt beim Start
+  ohne Kauf still auf „Arbeitsblatt“
+- Schloss: Klasse `lk` (`lk(feat)` liefert ' lk' oder ''), Icon als CSS-Maske
+  `--lock-i`
+- Kein Server, keine Belegprüfung: Kauf in localStorage `bw:voll`; Store-
+  Ereignisse `approved`/`finished`/`productUpdated`/`receiptUpdated` setzen ihn,
+  jede Transaktion wird mit `finish()` abgeschlossen (Google erstattet sonst nach
+  drei Tagen). `restoreVoll()` wartet nach `restorePurchases()` 2 s auf Meldungen
+- Prüfkette: `?kauf=test` spielt den Store im Browser nach (Preis 3,99 €, Kauf
+  über Rückfrage, Konto in `bw:voll-test-konto`); Abschnitt 15 baut
+  `CdvPurchase` nach und prüft Anmeldung und Abschluss der Transaktion
+
 ## Kennungen
 
 - Paket/Bundle: `de.blattwerk.app`
-- Version 1.2.0, Code 10200 (Major*10000 + Minor*100 + Patch)
+- Version 1.3.0, Code 10300 (Major*10000 + Minor*100 + Patch)
 - Secrets wie FairMix; Zertifikat und ASC-Schlüssel wiederverwendbar,
   Profil und Android-Keystore neu
 
