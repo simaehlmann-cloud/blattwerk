@@ -24,3 +24,7 @@ secret-*.txt
 # Testausgaben
 test/ausgabe/
 .DS_Store
+
+# Store-Bilder (node store-bilder.js)
+store-bilder/
+test/store/
