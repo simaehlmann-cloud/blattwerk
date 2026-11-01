@@ -1,0 +1,12 @@
+{
+  "name": "bw-review",
+  "version": "1.0.0",
+  "description": "Blattwerk: Bewertungsfenster von iOS (StoreKit) und Google Play (In-App Review)",
+  "license": "MIT",
+  "private": true,
+  "cordova": {
+    "id": "bw-review",
+    "platforms": ["ios", "android"]
+  },
+  "keywords": ["ecosystem:cordova", "cordova-ios", "cordova-android"]
+}
