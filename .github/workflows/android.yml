@@ -95,6 +95,8 @@ jobs:
           set -e
           cordova create build "$APP_ID" "$APP_NAME"
           cp config.xml build/config.xml
+          # Eigenes Plugin (Bewertungsfenster); config.xml verweist relativ darauf
+          cp -R plugins-local build/
           mkdir -p build/res/android
           cp res/android/* build/res/android/
 

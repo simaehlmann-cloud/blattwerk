@@ -88,6 +88,8 @@ jobs:
           set -e
           cordova create build "$APP_ID" "$APP_NAME"
           cp config.xml build/config.xml
+          # Eigenes Plugin (Bewertungsfenster); config.xml verweist relativ darauf
+          cp -R plugins-local build/
           mkdir -p build/res/ios build/res/android
           cp res/ios/* build/res/ios/
           cp res/android/* build/res/android/
@@ -161,6 +163,11 @@ jobs:
           [ "$KRYPTO" = "false" ]  || { echo "::error::ITSAppUsesNonExemptEncryption fehlt – jeder Upload fragt sonst nach."; FEHLER=1; }
           [ "$FOTOS" != "FEHLT" ]  || { echo "::error::NSPhotoLibraryAddUsageDescription fehlt – 'Bild sichern' beendet die App."; FEHLER=1; }
           [ "$KAMERA" != "FEHLT" ] || { echo "::error::NSCameraUsageDescription fehlt – 'Foto aufnehmen' beendet die App."; FEHLER=1; }
+          # „Öffnen in Blattwerk“: PDF-Dokumenttyp und Kopie statt Öffnen an Ort und Stelle
+          DOKTYP=$(holen CFBundleDocumentTypes:0:LSItemContentTypes:0)
+          VORORT=$(holen LSSupportsOpeningDocumentsInPlace)
+          [ "$DOKTYP" = "com.adobe.pdf" ] || { echo "::error::CFBundleDocumentTypes ohne com.adobe.pdf ('$DOKTYP') – 'Öffnen in Blattwerk' fehlt."; FEHLER=1; }
+          [ "$VORORT" = "false" ] || { echo "::error::LSSupportsOpeningDocumentsInPlace ist '$VORORT', erwartet false."; FEHLER=1; }
           # Cordovas Platzhaltertext ("This app requires ...") weist Apple automatisch ab.
           case "$MEDIATHEK$KAMERA$FOTOS" in
             *"requires photo library access"*|*"This app requires"*|FEHLT*) echo "::error::Platzhaltertext oder fehlender Mediathek-Hinweis in der Info.plist."; FEHLER=1 ;;
