@@ -4,9 +4,9 @@
      (1.0.0 -> 10000). validate.js prueft, dass alle drei zur APP_VERSION in
      der index.html und zum Cache-Namen in sw.js passen. -->
 <widget id="de.blattwerk.app"
-        version="1.3.0"
-        android-versionCode="10300"
-        ios-CFBundleVersion="10300"
+        version="1.4.0"
+        android-versionCode="10400"
+        ios-CFBundleVersion="10400"
         xmlns="http://www.w3.org/ns/widgets"
         xmlns:cdv="http://cordova.apache.org/ns/1.0">
 
@@ -80,6 +80,30 @@
             <string>Blattwerk speichert auf deinen Wunsch ein Bild in deiner Fotomediathek. Vorhandene Fotos werden weder gelesen noch verändert.</string>
         </edit-config>
 
+        <!-- „Öffnen in Blattwerk“: PDFs aus Mail, Dateien oder Safari. iOS legt
+             eine Kopie in Documents/Inbox und meldet sie über handleOpenURL.
+             Nicht an Ort und Stelle öffnen: Die Kopie ist ohne Sonderrechte
+             lesbar, die App ändert nie die Datei des Nutzers. -->
+        <config-file target="*-Info.plist" parent="CFBundleDocumentTypes">
+            <array>
+                <dict>
+                    <key>CFBundleTypeName</key>
+                    <string>PDF-Dokument</string>
+                    <key>CFBundleTypeRole</key>
+                    <string>Editor</string>
+                    <key>LSHandlerRank</key>
+                    <string>Alternate</string>
+                    <key>LSItemContentTypes</key>
+                    <array>
+                        <string>com.adobe.pdf</string>
+                    </array>
+                </dict>
+            </array>
+        </config-file>
+        <edit-config target="LSSupportsOpeningDocumentsInPlace" file="*-Info.plist" mode="overwrite">
+            <false/>
+        </edit-config>
+
         <!-- Privacy-Manifest: wie bei FairMix ersetzt der Workflow das von
              cordova-ios mitgelieferte an Ort und Stelle (kein resource-file,
              sonst "duplicate output file"). -->
@@ -110,4 +134,8 @@
          Genaue Version: Der Kauf ist der einzige Weg zu Geld, hier soll kein
          Update unbemerkt etwas aendern. Produkt-ID: de.blattwerk.app.vollversion -->
     <plugin name="cordova-plugin-purchase" spec="13.19.1" />
+    <!-- Zweitkopie der Blätter als Datei und Lesen von „Öffnen in Blattwerk“ -->
+    <plugin name="cordova-plugin-file" spec="8.1.3" />
+    <!-- Eigenes Plugin im Repo: Bewertungsfenster von iOS bzw. Google Play -->
+    <plugin name="bw-review" spec="./plugins-local/bw-review" />
 </widget>

@@ -1,4 +1,4 @@
-# Blattwerk – Projektwissen, Stand 1.3.0
+# Blattwerk – Projektwissen, Stand 1.4.0
 
 PDF-Editor für Arbeitsblätter (Lehrkräfte), iOS und Android über Cordova,
 gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
@@ -119,10 +119,50 @@ gebaut wie FairMix. Repo: `simaehlmann-cloud/Blattwerk` (anzulegen).
   über Rückfrage, Konto in `bw:voll-test-konto`); Abschnitt 15 baut
   `CdvPurchase` nach und prüft Anmeldung und Abschluss der Transaktion
 
+## Neu in 1.4.0
+
+- **Liste** = `type: 'table'` mit `kind: 'list'` (Wertetabelle ohne `kind`,
+  unverändert). `ct[]` je Spalte `text|fill|check|num`, `head` nur `row|none`,
+  `cw[]` relative Breiten, `cells[r][c]`: Text bzw. bei `check` `'x'`.
+  Helfer `isList`, `colType`, `listCellKind`, `listNum`, `isChecked`,
+  `listFieldCell`; `fillableCell` ist für Listen immer false (keine Auswertung,
+  keine Lösungen). Feldnamen `<Name> <Überschrift> <Nr>`.
+  Export: `tablePrims(o, { forms: true })` lässt Kästchen und Feldtexte weg,
+  `drawTable` setzt PDFCheckBox (vorbelegt) bzw. PDFTextField (`stdSafe`).
+  Abhaken auf dem Blatt: `listToggleAt`, nur wenn die Tabelle **vor** dem Tipp
+  schon gewählt war (`G.pre`; `G.was` ist nach dem Wählen immer wahr)
+- Werkzeuge: `list` „Tabelle“ (J), `table` „Wertetabelle“ (Z), beide unter „Mehr“
+- **Neues Blatt:** `SHEETS` (ws, exam, list, info, blank), `headerObjs(p,
+  { title, nkd })`, `headTop()`, `sheetBody()`; `newSheet(demo, { kind, title,
+  nkd, bg, land, big })`, `head: true` bleibt als Kurzform. `P.sheet` merkt die
+  letzte Blattart, `P.head` steuert Name/Klasse/Datum beim Arbeitsblatt
+- **Vorlagen:** IndexedDB Version 3 mit `tpls` (Kurzinfo) und `tpldata`
+  (Projekt-JSON wie „Projekt als Datei“). `newFromTemplate` → `loadProject`
+  (neue docId, PDFs kopiert)
+- **Dateisicherung `FB`** (cordova-plugin-file 8.1.3): `DB.save/putPdf/del/
+  putTpl/setTplMeta/delTpl` sind umhüllt und spiegeln in
+  `<syncedDataDirectory>/blattwerk/docs/<id>/{doc.json,meta.json,<sid>.pdf}` und
+  `tpls/<id>/{tpl.json,meta.json}`. Start: Ist `listMeta()` leer, `FB.restore`.
+  `bw:fb` merkt die einmalige Komplettsicherung nach dem Update.
+  Achtung: Das Plugin ersetzt `window.File`/`FileReader` – kein `new File()`
+  (validate.js prüft das); FileReader auf Blobs funktioniert weiter
+- **Öffnen in (iOS):** Info.plist `CFBundleDocumentTypes` com.adobe.pdf,
+  `LSSupportsOpeningDocumentsInPlace=false`; cordova-ios ruft
+  `window.handleOpenURL(url)` (CDVHandleOpenURL), `FB.readUrl` liest und löscht
+  die Kopie in Documents/Inbox. Android: offen (das gängige Intent-Plugin
+  verlangt REQUEST_INSTALL_PACKAGES – für Play ungeeignet)
+- **Bewertung:** eigenes Plugin `plugins-local/bw-review` (iOS
+  `SKStoreReviewController requestReviewInScene`, Android Play In-App Review
+  2.0.2). Workflows kopieren `plugins-local` in den Bauordner. `afterExport()`
+  zählt nur abgeschlossenes Teilen (`completed`), fragt beim 3. einmal
+  (`bw:exports`, `bw:review`)
+- Prüfkette: `test/neu-1.4.js` (≈70 Prüfungen, mit nachgebautem
+  cordova-plugin-file im localStorage)
+
 ## Kennungen
 
 - Paket/Bundle: `de.blattwerk.app`
-- Version 1.3.0, Code 10300 (Major*10000 + Minor*100 + Patch)
+- Version 1.4.0, Code 10400 (Major*10000 + Minor*100 + Patch)
 - Secrets wie FairMix; Zertifikat und ASC-Schlüssel wiederverwendbar,
   Profil und Android-Keystore neu
 
@@ -137,8 +177,7 @@ Chromium braucht eine UTF-8-Locale, sonst heißen Downloads mit Umlaut
 
 ## Offene Punkte
 
-- „Öffnen in Blattwerk“ (Dokumenttypen + Plugin)
-- iOS: Zweitkopie der Blätter als Datei (Schutz vor Speicherbereinigung)
+- „Öffnen in Blattwerk“ auf Android (Intent-Plugin ohne Zusatzrechte nötig)
 - Test auf echten Geräten (iPad mit Stift, Android-Tablet), v. a. Formatieren
   einzelner Wörter mit der Bildschirmtastatur
 - Ausfüllbare Felder nutzen Helvetica: Schüler-Eingaben außerhalb von

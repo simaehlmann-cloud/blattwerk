@@ -47,6 +47,12 @@ FÜR SCHÜLERINNEN UND SCHÜLER AUSFÜLLBAR
 • Ankreuzkästchen für Multiple-Choice-Aufgaben
 • Das PDF funktioniert in der Dateien-App, in Adobe Reader, GoodNotes und im Browser
 
+NICHT NUR ARBEITSBLÄTTER
+• Neues Blatt als Arbeitsblatt, Klassenarbeit, Liste, Brief oder Info – Kopfzeile mit Titel und Name, Klasse, Datum einzeln wählbar
+• Listen zum Abhaken, etwa wer das Geld für die Tagesfahrt abgegeben hat: Spalten zum Abhaken, zum Ausfüllen und mit fortlaufender Nummer
+• Klassenliste einfügen, abhaken in Blattwerk oder im PDF
+• Eigene Vorlagen sichern und mit einem Tipp wiederverwenden
+
 VORLAGEN MIT PASSENDEM HINTERGRUND
 • Neue Blätter mit Kästchen, Linien, Punktraster, Millimeterpapier oder Koordinatensystem
 • Kopfzeile mit Name, Klasse und Datum als ausfüllbare Felder
@@ -74,6 +80,18 @@ AUSWERTEN UND BEWERTEN
 EINFACH ZU BEDIENEN
 • Wenige Werkzeuge auf einen Blick, alle weiteren unter „Mehr“
 • Oben umschalten: Arbeitsblatt, mit Hilfen oder mit Lösung – du siehst genau, was die Schüler bekommen
+```
+
+## Neu in dieser Version (1.4.0, max. 4000 Zeichen)
+
+```
+Mehr als Arbeitsblätter:
+• Neues Blatt mit Blattarten: Arbeitsblatt, Klassenarbeit, Liste, Brief / Info oder leer. Titel und Name, Klasse, Datum lassen sich einzeln abwählen.
+• Neue Tabelle für Listen: Spalten zum Abhaken, zum Ausfüllen oder mit fortlaufender Nummer. Klassenliste einfügen, abhaken direkt in Blattwerk oder später im PDF.
+• Die Tabelle für Mathe heißt jetzt Wertetabelle.
+• Eigene Vorlagen: ein Blatt als Vorlage sichern und unter „Neu“ wiederverwenden.
+• PDFs aus Mail oder der Dateien-App direkt in Blattwerk öffnen.
+• Zusätzliche Sicherungskopie deiner Blätter auf dem Gerät.
 ```
 
 ## Schlüsselwörter (App Store, max. 100 Zeichen)
@@ -148,7 +166,7 @@ iPhone 6,3″ 1206 × 2622 und iPad 13″ 2048 × 2732, je 10 Bilder.
 7. Koordinatensystem mit Funktionsgraph einstellen
 8. Texterkennung: gescannte Blätter wieder bearbeitbar
 9. Neues Blatt mit passendem Hintergrund
-10. iPhone: Startbildschirm · iPad: Erwartungshorizont auf Knopfdruck
+10. Startbildschirm: alles bleibt auf dem Gerät
 
 Prüfbild für den In-App-Kauf: `test/ausgabe/vollversion-review.png` (aus smoketest.js).
 

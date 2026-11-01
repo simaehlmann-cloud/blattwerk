@@ -100,10 +100,16 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
     <li>Bilder und Fotos, die Sie in ein Blatt einfügen</li>
     <li>den Namen jedes Blatts und den Zeitpunkt der letzten Änderung</li>
     <li>den Vermerk, ob die Vollversion gekauft wurde</li>
+    <li>Ihre eigenen Vorlagen</li>
+    <li>die Anzahl Ihrer Exporte und ob bereits um eine Bewertung gebeten wurde</li>
   </ul>
   <p>
-    Diese Daten liegen im geschützten Speicher der App (IndexedDB) und werden zu keinem
-    Zeitpunkt übertragen. Einzelne Blätter löschen Sie unter „Meine Blätter“. Beim
+    Diese Daten liegen im geschützten Speicher der App (IndexedDB). Blätter, Original-PDFs und
+    Vorlagen legt die App zusätzlich als Dateien in ihrem eigenen, für andere Apps nicht
+    zugänglichen Ordner ab, damit sie erhalten bleiben, falls das Betriebssystem den Speicher
+    der App bereinigt. Auf iOS ist dieser Ordner Teil Ihrer Gerätesicherung (iCloud bzw.
+    Computer), wenn Sie diese eingeschaltet haben. Der Anbieter erhält davon nichts.
+    Die Daten werden von der App zu keinem Zeitpunkt übertragen. Einzelne Blätter löschen Sie unter „Meine Blätter“. Beim
     Deinstallieren der App werden alle Daten vollständig entfernt.
   </p>
 
@@ -140,6 +146,10 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
     sieht dabei nur die Bilder, die Sie auswählen.
   </p>
   <p>
+    Öffnen Sie ein PDF aus einer anderen App mit „Öffnen in Blattwerk“, legt das Betriebssystem
+    eine Kopie für die App ab; Blattwerk liest sie ein und löscht die Kopie danach.
+  </p>
+  <p>
     Beim Export eines PDFs oder einer Projektdatei wird die Datei in einem temporären
     App-Verzeichnis abgelegt und über die Teilen-Funktion Ihres Geräts weitergegeben. Wohin die
     Datei anschließend gelangt, entscheiden allein Sie.
@@ -148,7 +158,7 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
   <h2>6. Verbindungen ins Internet</h2>
   <p>
     Die App baut keine Verbindungen zu Servern des Anbieters oder Dritter auf. Alle verwendeten Bibliotheken
-    (pdf.js, pdf-lib, fontkit, qrcode-generator, Tesseract, cordova-plugin-purchase) und Schriften (Noto) sind Teil der App und werden nicht von
+    (pdf.js, pdf-lib, fontkit, qrcode-generator, Tesseract, cordova-plugin-purchase, cordova-plugin-file) und Schriften (Noto) sind Teil der App und werden nicht von
     fremden Servern geladen. Die Lizenzen finden Sie in der App unter „Lizenzen“.
   </p>
   <p>
@@ -158,6 +168,11 @@ DATENSCHUTZ = KOPF.format(titel="Datenschutzerklärung") + """  <h1>Datenschutze
     allein der jeweilige Store-Betreiber mit Ihrem Konto ab. Der Anbieter erhält dabei keine
     personenbezogenen Daten, sondern nur die üblichen zusammengefassten Verkaufszahlen.
     Arbeitsblätter, Bilder und Daten von Schülerinnen und Schülern sind daran nicht beteiligt.
+  </p>
+  <p>
+    Nach einigen erfolgreichen Exporten bittet die App einmalig über die Bewertungsfunktion des
+    Betriebssystems (Apple bzw. Google Play) um eine Bewertung. Ob das Fenster erscheint und was
+    Sie dort angeben, verarbeitet allein der Store-Betreiber; die App erfährt davon nichts.
   </p>
 
   <h2>7. Bezug über einen App-Vertrieb und In-App-Kauf</h2>
@@ -239,6 +254,7 @@ def lizenzen():
         ("@pdf-lib/fontkit 1.1.1", "Devon Govett, Andrew Dillon, MIT-Lizenz", "lib/licenses/fontkit-LICENSE.txt"),
         ("qrcode-generator 1.4.4", "Kazuhiko Arase, MIT-Lizenz. Das Wort „QR Code“ ist eine eingetragene Marke der DENSO WAVE INCORPORATED.", "lib/licenses/qrcode-generator-LICENSE.txt"),
         ("tesseract.js 7.0.0", "Texterkennung im Browser, Apache License 2.0", "lib/licenses/tesseract.js-LICENSE.md"),
+        ("cordova-plugin-file 8.1.3", "Apache Software Foundation, Apache License 2.0 (Dateisicherung und „Öffnen in Blattwerk“)", "lib/licenses/cordova-plugin-file-LICENSE.txt"),
         ("cordova-plugin-purchase 13.19.1", "Jean-Christophe Hoelt und Mitwirkende, MIT-Lizenz (Kaufschnittstelle für die Vollversion)", "lib/licenses/cordova-plugin-purchase-LICENSE.txt"),
         ("tesseract.js-core 6.1.2 (Tesseract OCR) mit deutschem Sprachmodell (tessdata_best, int)", "Tesseract OCR: Google und Mitwirkende; Sprachmodell aus tessdata_best; Apache License 2.0", "lib/licenses/tesseract.js-core-LICENSE.txt"),
         ("Noto Sans, Noto Serif, Noto Sans Mono, Noto Sans Math", "The Noto Project Authors, SIL Open Font License 1.1 (auf die benötigten Schriftzeichen reduziert)", "fonts/OFL.txt"),

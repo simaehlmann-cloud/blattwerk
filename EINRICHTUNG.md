@@ -152,17 +152,17 @@ Diese Punkte kann kein automatischer Test abdecken:
 - [ ] Vollversion kaufen (TestFlight-Sandbox bzw. Play-Lizenztest), App neu
       installieren, „Käufe wiederherstellen“ – siehe Abschnitt 5
 - [ ] Kauf abbrechen: keine Fehlermeldung, Hinweis bleibt offen
+- [ ] (1.4) In der Dateien-App ein PDF lange drücken → Teilen → Blattwerk:
+      Das PDF öffnet sich in Blattwerk. Ebenso aus Mail (Anhang → Teilen)
+- [ ] (1.4) Liste anlegen, auf dem Blatt abhaken, teilen, in der Dateien-App
+      weiter abhaken
+- [ ] (1.4) Bewertungsfenster: erscheint in TestFlight **nicht** (Apple zeigt
+      es dort nie) – erst in der Store-Version nach dem dritten Teilen
 
 ## 7. Bekannte offene Punkte (bewusst nach 1.0)
 
-- **Datensicherheit auf iOS:** Wie bei FairMix kann iOS den WebView-Speicher
-  unter Speicherdruck leeren. Blattwerk speichert in IndexedDB (deutlich mehr
-  Platz als localStorage), aber nicht in einer echten Datei. Die App weist
-  darauf hin, wichtige Blätter zusätzlich als PDF oder Projektdatei zu sichern.
-  Sauberer wäre eine Zweitkopie über ein Dateisystem-Plugin – derselbe Weg 2,
-  den du für FairMix notiert hast.
-- **„Öffnen in Blattwerk“** aus Mail oder Dateien-App: braucht Dokumenttypen
-  in der Info.plist und ein Plugin, das die Datei entgegennimmt. Bis dahin
-  öffnet man PDFs über „Meine Blätter“ → „Vom Gerät öffnen“.
+- **Datensicherheit auf iOS:** seit 1.4.0 erledigt (Zweitkopie als Datei,
+  Wiederherstellen beim Start).
+- **„Öffnen in Blattwerk“:** seit 1.4.0 auf iOS. Android fehlt noch.
 - Die Punkte auf der ToDo-Liste: Unterstreichen, Ausrichtung, Formatierung
   einzelner Wörter, Rücklauf-Auswertung, Lösungsblatt.

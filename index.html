@@ -168,6 +168,35 @@ body.home-open #app{visibility:hidden}
 .voll-ok{display:flex;align-items:center;gap:8px}
 .voll-ok svg.i{width:22px;height:22px;flex:none;color:#2e7d32}
 .voll-acts{flex-wrap:wrap}
+.kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.kind{display:flex;gap:10px;align-items:center;text-align:left;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--raise);color:var(--ink)}
+.kind svg.i{width:26px;height:26px;color:var(--accent)}
+.kind span{display:flex;flex-direction:column;min-width:0}
+.kind b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kind small{font-size:12px;color:var(--muted);line-height:1.3}
+.kind[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent)}
+.dlg h3.dsub{margin:4px 0 -4px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;gap:10px;align-items:baseline}
+.dlg h3.dsub .linkbtn{text-transform:none;letter-spacing:0;font-size:13px}
+.nd-opts{display:flex;flex-direction:column;gap:12px}
+.nd-opts[hidden]{display:none}
+.nd-head{align-items:flex-start}
+.nd-head>div{display:flex;flex-wrap:wrap;gap:8px 18px;flex:1;min-width:0}
+.tpl-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tpl-list li{display:flex;gap:8px}
+.tpl-list .tin{flex:1;min-width:0}
+.lcol{display:flex;flex-direction:column;gap:6px;padding:8px 0;border-top:1px solid var(--line)}
+.lcol:first-of-type{border-top:0}
+.lcol-h{display:flex;gap:6px;align-items:center}
+.lcol-h .tin{flex:1;min-width:0}
+.lcw{display:flex;align-items:center;gap:2px;font-size:12px;color:var(--muted);white-space:nowrap}
+.lcw .btn.sm{padding:2px 8px;min-width:0}
+.lcol .seg button{font-size:12px;padding:5px 6px}
+.list-ed td.lnum{text-align:center;color:var(--muted);font-size:12px;padding:0 4px}
+.list-ed td.lchk{text-align:center}
+.list-ed td.lchk input{width:18px;height:18px;accent-color:var(--accent)}
+.list-ed{max-height:420px;overflow:auto}
+.list-ed input:not([type=checkbox]){width:100%;min-width:56px;text-align:left}
+.list-ed table{width:100%}
 
 .stage{grid-area:stage;overflow:auto;position:relative;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;
   background-color:var(--desk);
@@ -429,7 +458,7 @@ textarea.tin{min-height:64px;resize:vertical;font-family:ui-monospace,SFMono-Reg
 'use strict';
 
 /* Muss zu sw.js (CACHE), config.xml (version) und package.json passen. validate.js prueft das. */
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 
 const pdfjs = window.pdfjsLib;
 const PL = window.PDFLib;
@@ -464,11 +493,11 @@ const S = {
 const PREF_DEF = {
   start: 'home', theme: 'auto', snap: true, mode: 'simple', view: 'base',
   font: 'sans', size: 12, textColor: '#000000', markColor: '#ffe14d', shapeColor: '#000000', shapeWidth: 1.2,
-  formulaColor: '#000000', linesColor: '#8b91a1', bg: 'grid', head: true, grades: [87.5, 75, 62.5, 50, 25]
+  formulaColor: '#000000', linesColor: '#8b91a1', bg: 'grid', head: true, sheet: 'ws', grades: [87.5, 75, 62.5, 50, 25]
 };
 const PREF_OK = {
   start: v => ['home', 'last'].includes(v), mode: v => ['simple', 'all'].includes(v), view: v => ['base', 'help', 'sol'].includes(v), theme: v => ['auto', 'light', 'dark'].includes(v), font: v => ['sans', 'serif', 'mono'].includes(v),
-  size: v => v >= 6 && v <= 48, shapeWidth: v => v >= 0.3 && v <= 6, bg: v => ['white', 'grid', 'lines', 'dots', 'mm', 'coord'].includes(v),
+  size: v => v >= 6 && v <= 48, shapeWidth: v => v >= 0.3 && v <= 6, bg: v => ['white', 'grid', 'lines', 'dots', 'mm', 'coord'].includes(v), sheet: v => ['ws', 'exam', 'list', 'info', 'blank'].includes(v),
   grades: v => Array.isArray(v) && v.length === 5 && v.every(x => typeof x === 'number' && x >= 0 && x <= 100),
   textColor: v => isHex(v), markColor: v => isHex(v), shapeColor: v => isHex(v), formulaColor: v => isHex(v), linesColor: v => isHex(v)
 };
@@ -966,6 +995,15 @@ function wrapPlain(text, key, size, maxW) {
   }
   return lines;
 }
+/* Liste (Tabelle mit Spaltenarten): Text, ausfüllbar, abhaken, Nummer.
+   Die Wertetabelle (ohne kind) bleibt unverändert. */
+const isList = o => !!o && o.type === 'table' && o.kind === 'list';
+const LIST_TYPES = [['text', 'Text'], ['fill', 'Ausfüllbar'], ['check', 'Abhaken'], ['num', 'Nummer']];
+const colType = (o, c) => { const t = isList(o) && Array.isArray(o.ct) ? o.ct[c] : null; return LIST_TYPES.some(x => x[0] === t) ? t : 'text'; };
+const listCellKind = (o, r, c) => isList(o) && !((o.head === 'row' && r === 0)) ? colType(o, c) : null;
+const listNum = (o, r) => r + 1 - (o.head === 'row' ? 1 : 0);
+const isChecked = v => /^(x|✓|1|ja|true)$/i.test(String(v || '').trim());
+const listHead = (o, c) => o.head === 'row' ? String((o.cells[0] || [])[c] || '').trim() : '';
 function tableLayout(o, opt = {}) {
   const rows = o.rows, cols = o.cols, s = o.size || 11, lh = 1.2;
   const ws = Array.isArray(o.cw) && o.cw.length === cols ? o.cw : Array(cols).fill(1);
@@ -977,11 +1015,13 @@ function tableLayout(o, opt = {}) {
     cellLines.push([]); let h = o.rh || 20;
     for (let c = 0; c < cols; c++) {
       const head = (o.head === 'row' && r === 0) || (o.head === 'col' && c === 0);
-      const v = (o.cells[r] || [])[c] || '', sol = (o.sol && o.sol[r] || [])[c] || '';
+      const lk = listCellKind(o, r, c);
+      if (lk === 'check') { const box = Math.min(12, (o.rh || 20) - 6); cellLines[r].push({ lines: [], head, check: true, checked: isChecked((o.cells[r] || [])[c]), box }); h = Math.max(h, box + 6); continue; }
+      const v = lk === 'num' ? String(listNum(o, r)) : (o.cells[r] || [])[c] || '', sol = lk ? '' : (o.sol && o.sol[r] || [])[c] || '';
       const show = v || (opt.sol && sol) || '';
       const isSol = !v && opt.sol && !!sol;
       const lines = show ? wrapPlain(show, head ? keyB : key, s, cw[c] - 6) : [];
-      cellLines[r].push({ lines, head, isSol, empty: !v });
+      cellLines[r].push({ lines, head, isSol, empty: !v, kind: lk, left: lk === 'text' || lk === 'fill' });
       h = Math.max(h, lines.length * s * lh + 6);
     }
     rh.push(h);
@@ -996,9 +1036,20 @@ function tablePrims(o, opt = {}) {
     for (let c = 0; c < o.cols; c++) {
       const cell = L.cellLines[r][c];
       if (cell.head) P.push({ t: 'r', x, y, w: L.cw[c], h: L.rh[r], fill: '#eef1f6' });
-      else if (cell.empty && o.fill && opt.hint) P.push({ t: 'r', x, y, w: L.cw[c], h: L.rh[r], fill: '#f5f8ff' });
-      const n = cell.lines.length, top = y + (L.rh[r] - n * L.s * L.lh) / 2;
-      cell.lines.forEach((ln, i) => P.push(Tx(x + L.cw[c] / 2, top + (base + i * L.lh) * L.s, L.s, ln, 'c', { b: cell.head, it: cell.isSol, c: cell.isSol ? RED : ink })));
+      else if (opt.hint && (cell.kind === 'fill' || cell.check || (!cell.kind && cell.empty && o.fill))) P.push({ t: 'r', x, y, w: L.cw[c], h: L.rh[r], fill: '#f5f8ff' });
+      if (cell.check) {
+        /* Mit Formularfeldern zeichnet das Kästchen-Widget Rahmen und Haken selbst */
+        if (!opt.forms) {
+          const b = cell.box, bx = x + (L.cw[c] - b) / 2, by = y + (L.rh[r] - b) / 2;
+          P.push({ t: 'r', x: bx, y: by, w: b, h: b, fill: '#ffffff', stroke: '#262b38', sw: 0.9 });
+          if (cell.checked) P.push({ t: 'p', pts: [[bx + b * 0.21, by + b * 0.52], [bx + b * 0.4, by + b * 0.71], [bx + b * 0.79, by + b * 0.29]], c: '#000000', w: Math.max(0.8, b * 0.12) });
+        }
+        x += L.cw[c]; continue;
+      }
+      if (!(opt.forms && cell.kind === 'fill')) {
+        const n = cell.lines.length, top = y + (L.rh[r] - n * L.s * L.lh) / 2;
+        cell.lines.forEach((ln, i) => P.push(Tx(cell.left ? x + 3 : x + L.cw[c] / 2, top + (base + i * L.lh) * L.s, L.s, ln, cell.left ? 'l' : 'c', { b: cell.head, it: cell.isSol, c: cell.isSol ? RED : ink })));
+      }
       x += L.cw[c];
     }
     y += L.rh[r];
@@ -1013,7 +1064,8 @@ function fixTable(o) {
   o.rows = clamp(Math.round(+o.rows || 2), 1, 40); o.cols = clamp(Math.round(+o.cols || 2), 1, 20);
   const grid = (g, fill) => { const out = []; for (let r = 0; r < o.rows; r++) { out.push([]); for (let c = 0; c < o.cols; c++) out[r].push(String(((g || [])[r] || [])[c] ?? fill)); } return out; };
   o.cells = grid(o.cells, ''); o.sol = grid(o.sol, '');
-  if (!Array.isArray(o.cw) || o.cw.length !== o.cols) o.cw = null;
+  if (!Array.isArray(o.cw) || o.cw.length !== o.cols) o.cw = isList(o) && Array.isArray(o.cw) ? Array.from({ length: o.cols }, (_, c) => o.cw[c] > 0 ? o.cw[c] : 1) : null;
+  if (isList(o)) { o.ct = Array.from({ length: o.cols }, (_, c) => colType(o, c)); o.head = o.head === 'row' ? 'row' : 'none'; o.fill = false; }
   o.h = tableLayout(o, { sol: true }).h;
 }
 
@@ -1247,6 +1299,7 @@ const ICON = {
   field: '<rect x="3" y="7.5" width="18" height="9" rx="1.5"/><path d="M7 10.5v3"/>',
   check: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 12.2l2.8 2.8L16.5 9"/>',
   table: '<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 10h18M3 14.5h18M9 5v14M15 5v14"/>',
+  list: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M3 8.5h18M9 4v16"/><path d="M12 13l1.6 1.6L17 11.2"/>',
   shape: '<path d="M4 19L12 5l8 14z"/><circle cx="18" cy="6" r="2.5"/>',
   lines: '<path d="M4 8h16M4 13h16M4 18h16"/>',
   coord: '<path d="M6 21V3.5M3.8 5.7L6 3.5l2.2 2.2M3 18h17.5M18.3 15.8l2.2 2.2-2.2 2.2"/><path d="M8.5 15.5c3-1 6-4.5 8-10"/>',
@@ -1265,7 +1318,8 @@ const TOOLS = [
   { id: 'crop', label: 'Ausschnitt', key: 'a', hint: 'Einen Bereich aus einem PDF ausschneiden, etwa eine Aufgabe aus dem Schulbuch, und als Bild einfügen.' },
   { id: 'field', label: 'Textfeld', key: 'f', hint: 'Rechteck ziehen. Im exportierten PDF können Schüler hineinschreiben. Eine Lösung trägst du rechts ein.' },
   { id: 'check', label: 'Ankreuzen', key: 'k', hint: 'Antippen, um ein Ankreuzkästchen zu setzen. Rechts legst du fest, ob es richtig ist.' },
-  { id: 'table', label: 'Tabelle', key: 'z', hint: 'Antippen, um eine Tabelle einzufügen, zum Beispiel eine Wertetabelle. Leere Zellen werden im PDF ausfüllbar.' },
+  { id: 'list', label: 'Tabelle', key: 'j', hint: 'Antippen, um eine Tabelle einzufügen, zum Beispiel eine Liste zum Abhaken. Für jede Spalte wählst du rechts: Text, ausfüllbar, abhaken oder fortlaufende Nummer.' },
+  { id: 'table', label: 'Wertetabelle', key: 'z', hint: 'Antippen, um eine Wertetabelle einzufügen. Leere Zellen werden im PDF ausfüllbar; die y-Werte lassen sich aus dem Funktionsterm als Lösung berechnen.' },
   { id: 'shape', label: 'Formen', key: 's', hint: 'Form wählen und ziehen: Strecke, Pfeil, Rechteck, Ellipse, Kreis (vom Mittelpunkt aus), Dreieck, Trapez, Parallelogramm, Raute, Drachen, Winkel oder Rechenkästchen. Eckpunkte lassen sich danach ziehen.' },
   { id: 'lines', label: 'Linien', key: 'l', hint: 'Bereich ziehen, um Schreiblinien für ausgedruckte Blätter einzufügen.' },
   { id: 'coord', label: 'Koordinaten', key: 'g', hint: 'Antippen, um ein Koordinatensystem einzufügen. Rechts stellst du Bereich, Einheit, Funktionsgraphen und Punkte ein.' },
@@ -1275,7 +1329,7 @@ const TOOLS = [
 /* Einfache Bedienung: nur diese Werkzeuge stehen in der Leiste, der Rest unter „Mehr“ */
 const CORE_TOOLS = ['select', 'text', 'highlight', 'erase', 'field', 'image'];
 const DRAW = new Set(['highlight', 'whiteout', 'field', 'lines', 'shape']);
-const TAP = new Set(['text', 'check', 'coord', 'formula', 'table', 'points', 'qr']);
+const TAP = new Set(['text', 'check', 'coord', 'formula', 'table', 'list', 'points', 'qr']);
 const STICKY = new Set(['highlight', 'whiteout', 'check', 'edittext']);
 const TYPE_NAME = { text: 'Text', field: 'Textfeld', check: 'Ankreuzkästchen', highlight: 'Markierung', whiteout: 'Abdeckung', image: 'Bild', lines: 'Schreiblinien', coord: 'Koordinatensystem', formula: 'Formel', table: 'Tabelle', shape: 'Form', points: 'Punktekästchen', qr: 'QR-Code' };
 const TEXT_COLORS = ['#000000', '#4a4f5c', '#2440b3', '#c62828', '#2e7d32', '#b45309'];
@@ -2348,6 +2402,8 @@ function createAt(pid, pt, tool) {
   else if (tool === 'table') {
     o = newObj(pid, 'table', { rows: 2, cols: 8, rh: 22, size: 11, head: 'col', fill: true, w: Math.min(440, p.w - 40), name: nextName('table', 'Tabelle'), cells: [['x', '−3', '−2', '−1', '0', '1', '2', '3'], ['y', '', '', '', '', '', '', '']], sol: [], cw: [1.2, 1, 1, 1, 1, 1, 1, 1] });
     fixTable(o); center(o);
+  } else if (tool === 'list') {
+    o = newObj(pid, 'table', listDefaults({ w: Math.min(460, p.w - 60) })); fixTable(o); center(o);
   } else if (tool === 'points') {
     const n = S.objs.filter(x => x.type === 'points').length + 1;
     o = newObj(pid, 'points', { w: 62, h: 22, label: String(n), max: 2, afb: 'I', comp: '', expect: '' });
@@ -2581,11 +2637,13 @@ pagesEl.addEventListener('pointerdown', e => {
   if (oEl && !DRAW.has(S.tool)) {
     const id = oEl.dataset.id;
     endEdit();
+    /* Vor dem Wählen: War genau dieses Element schon gewählt? (Liste: erst dann abhaken) */
+    const pre = S.sel === id && selIds().length === 1;
     if (e.shiftKey || e.metaKey || e.ctrlKey || S.multiMode) { toggleMulti(id); }
     else if (!selIds().includes(id)) select(id);
     const was = S.sel === id && selIds().length === 1;
     const ids = selIds().includes(id) ? selIds() : [id];
-    G = { kind: 'move', ids, o: find(id), pid, start: pt, origs: captureOrigs(ids), pg, moved: false, was: was && !e.shiftKey };
+    G = { kind: 'move', ids, o: find(id), pid, start: pt, origs: captureOrigs(ids), pg, moved: false, was: was && !e.shiftKey, pre: pre && !e.shiftKey };
     e.preventDefault(); return;
   }
   /* Auswählen: Text im PDF antippen ändert ihn. Ist noch etwas ausgewählt,
@@ -2769,6 +2827,7 @@ function finishGesture() {
     return;
   }
   if (g.kind === 'move' && !g.moved && g.was && g.o.type === 'text') { startEdit(g.o.id); return; }
+  if (g.kind === 'move' && !g.moved && g.pre && isList(g.o) && listToggleAt(g.o, g.start)) return;
   if (g.moved) {
     for (const id of g.ids || [g.o.id]) { const o = find(id); if (o && o.type === 'lines') o.h = Math.max(o.gap, Math.round(o.h / o.gap) * o.gap); }
     renderObjs(g.pid); queueSave(); if (selIds().length) renderPanel();
@@ -2777,6 +2836,15 @@ function finishGesture() {
 window.addEventListener('pointerup', finishGesture);
 window.addEventListener('pointercancel', () => { if (G && G.kind === 'tap') G = null; else finishGesture(); });
 pagesEl.addEventListener('dblclick', e => { const oEl = e.target.closest('.o-text'); if (oEl && S.editing !== oEl.dataset.id) startEdit(oEl.dataset.id); });
+/* Tipp auf ein Abhak-Kästchen einer gewählten Liste schaltet es um */
+function listToggleAt(o, pt) {
+  const L = tableLayout(o); let y = o.y, r = -1, c = -1;
+  for (let i = 0; i < o.rows; i++) { if (pt.y >= y && pt.y < y + L.rh[i]) { r = i; break; } y += L.rh[i]; }
+  let x = o.x; for (let j = 0; j < o.cols; j++) { if (pt.x >= x && pt.x < x + L.cw[j]) { c = j; break; } x += L.cw[j]; }
+  if (r < 0 || c < 0 || listCellKind(o, r, c) !== 'check') return false;
+  snap(); o.cells[r][c] = isChecked(o.cells[r][c]) ? '' : 'x';
+  renderObjs(o.page); renderPanel(); queueSave(); return true;
+}
 function normRect(a, b, p) {
   const x1 = clamp(Math.min(a.x, b.x), 0, p.w), y1 = clamp(Math.min(a.y, b.y), 0, p.h);
   const x2 = clamp(Math.max(a.x, b.x), 0, p.w), y2 = clamp(Math.max(a.y, b.y), 0, p.h);
@@ -2816,7 +2884,7 @@ function cloneObj(o, pid, dx, dy) {
   moveObj(c, dx, dy);
   if (c.type === 'field') c.name = nextName('field', 'Feld');
   if (c.type === 'check') c.name = nextName('check', 'Kästchen');
-  if (c.type === 'table') c.name = nextName('table', 'Tabelle');
+  if (c.type === 'table') c.name = nextName('table', isList(c) ? 'Liste' : 'Tabelle');
   return c;
 }
 function dupSel() {
@@ -3094,14 +3162,14 @@ function renderPanel() {
       <div class="acts"><button class="btn wide" data-act="formcheck">Formular prüfen</button>
       <button class="btn wide${lk('auswertung')}" data-act="evaluate">Ausgefüllte PDFs auswerten</button></div></section>`;
     h += `<section><h3>Sichern</h3><p class="mini">Alles wird automatisch unter „Meine Blätter“ auf diesem Gerät gespeichert. Fassungen für Schüler und das Lösungsblatt gibt es über „${esc(exportLabel())}“ oben rechts.</p>
-      <div class="acts"><button class="btn wide" data-act="saveproj">Projekt als Datei sichern</button>
+      <div class="acts"><button class="btn wide" data-act="savetpl">Als Vorlage sichern</button><button class="btn wide" data-act="saveproj">Projekt als Datei sichern</button>
       ${all || S.pages.some(q => q.ocr) ? '<button class="btn wide" data-act="readable">Lesefreundliche Kopie anlegen</button>' : ''}</div></section>`;
     if (all) h += `<section class="wide-only"><h3>Tastenkürzel</h3><div class="kbd">${TOOLS.map(t => `<b>${t.key.toUpperCase()}</b> ${t.label}`).join(' · ')}<br><b>Strg+C/V</b> kopieren/einfügen · <b>Strg+A</b> alles auf der Seite · <b>Strg+Z</b> rückgängig · <b>Strg+B/I/U</b> beim Schreiben</div></section>`;
     h += `<section><h3>Blattwerk</h3><div class="acts"><button class="btn" data-act="about">Hilfe und Erklärungen</button><button class="btn" data-act="settings">Einstellungen</button></div>
       <p class="mini">Version ${APP_VERSION} · arbeitet offline. Blätter und Schülerdaten verlassen das Gerät nicht.</p>
       <div class="links"><a href="datenschutz.html" data-leave="1">Datenschutz</a><a href="impressum.html" data-leave="1">Impressum</a><a href="lizenzen.html" data-leave="1">Lizenzen</a></div></section>`;
   } else {
-    h += `<section><h3>Ausgewählt</h3><h2>${TYPE_NAME[o.type] || 'Element'}</h2>${o.fromLine ? '<p class="note">Der Originaltext ist abgedeckt. Löschst du diesen Text, erscheint das Original wieder.</p>' : ''}</section>`;
+    h += `<section><h3>Ausgewählt</h3><h2>${isList(o) ? 'Tabelle' : o.type === 'table' ? 'Wertetabelle' : TYPE_NAME[o.type] || 'Element'}</h2>${o.fromLine ? '<p class="note">Der Originaltext ist abgedeckt. Löschst du diesen Text, erscheint das Original wieder.</p>' : ''}</section>`;
     h += typePanel(o);
     /* Lösung eingetragen, aber auf dem Blatt nicht zu sehen? Hinweis statt Rätsel */
     if (!S.view.sol && (o.type === 'field' || o.type === 'check' || o.type === 'table' || (o.type === 'coord' && (o.funcs || []).some(f => f.sol))))
@@ -3183,6 +3251,28 @@ function typePanel(o) {
       <p class="mini">Beispiele: \\frac{3}{4}, x^{2}, a_{1}, \\sqrt{2}, \\overline{AB}. Buchstaben erscheinen kursiv wie im Schulbuch.</p>
       ${row('Größe', numIn('size', o.size, 6, 72, 1) + PTU)}
       ${row('Farbe', swatches('color', TEXT_COLORS, o.color, true))}</section>`;
+  }
+  if (isList(o)) {
+    const hr = o.head === 'row', r0 = hr ? 1 : 0, tot = o.cw ? o.cw.reduce((a, b) => a + b, 0) : o.cols;
+    const colRow = c => `<div class="lcol"><div class="lcol-h">${hr ? `<input class="tin" data-lhead="${c}" value="${esc(listHead(o, c))}" placeholder="Spalte ${c + 1}" aria-label="Überschrift Spalte ${c + 1}" autocomplete="off">` : `<b>Spalte ${c + 1}</b>`}
+      <span class="lcw"><button class="btn sm" data-act="lcw-${c}--" aria-label="Spalte ${c + 1} schmaler">−</button><span>${Math.round((o.cw ? o.cw[c] : 1) / tot * 100)} %</span><button class="btn sm" data-act="lcw-${c}-+" aria-label="Spalte ${c + 1} breiter">+</button></span></div>
+      <div class="seg">${LIST_TYPES.map(([k, l]) => `<button data-act="lct-${c}-${k}" aria-pressed="${colType(o, c) === k}">${l}</button>`).join('')}</div></div>`;
+    const cellIn = (r, c) => {
+      const k = colType(o, c), v = (o.cells[r] || [])[c] || '';
+      if (k === 'num') return `<td class="lnum">${listNum(o, r)}</td>`;
+      if (k === 'check') return `<td class="lchk"><input type="checkbox" data-cell="${r},${c}" ${isChecked(v) ? 'checked' : ''} aria-label="Zeile ${listNum(o, r)}, ${esc(listHead(o, c) || 'Spalte ' + (c + 1))}"></td>`;
+      return `<td><input data-cell="${r},${c}" value="${esc(v)}" aria-label="Zeile ${listNum(o, r)}, ${esc(listHead(o, c) || 'Spalte ' + (c + 1))}" autocomplete="off"></td>`;
+    };
+    let g = ''; for (let r = r0; r < o.rows; r++) g += `<tr>${Array.from({ length: o.cols }, (_, c) => cellIn(r, c)).join('')}</tr>`;
+    return `<section>${row('Einträge', numIn('lrows', o.rows - r0, 1, 40 - r0, 1))}${row('Spalten', numIn('cols', o.cols, 1, 8, 1))}
+      ${row('Überschriften', segBtns('head', [['row', 'Ja'], ['none', 'Nein']], o.head))}
+      ${row('Zeilenhöhe', numIn('rh', o.rh, 14, 80, 2) + PTU)}${row('Schriftgröße', numIn('size', o.size, 6, 24, 1) + PTU)}</section>
+      <section><h3>Spalten</h3>${Array.from({ length: o.cols }, (_, c) => colRow(c)).join('')}
+      <p class="mini">Text: steht fest im PDF. Ausfüllbar: im PDF tippbar, was du hier einträgst, steht schon drin. Abhaken: Kästchen zum Ankreuzen. Nummer: zählt 1, 2, 3 …</p></section>
+      <section><h3>Einträge</h3><div class="grid-ed list-ed"><table>${g}</table></div>
+      <p class="mini">Abhaken geht hier, auf dem Blatt (Tabelle gewählt, Kästchen antippen) und später im PDF.</p>
+      <div class="acts"><button class="btn" data-act="list-paste">Namen einfügen</button><button class="btn" data-act="list-clear" ${o.ct.includes('check') ? '' : 'disabled'}>Häkchen entfernen</button></div>
+      ${tin('name', o.name, 'Name')}</section>`;
   }
   if (o.type === 'table') {
     const solMode = !!S.tableSol;
@@ -3271,6 +3361,7 @@ function applyProp(prop, v) {
   if (prop === 'snap') { S.snap = v; return; }
   if (/^grade\d$/.test(prop)) { snapOnce('meta' + prop); S.meta.grades = (S.meta.grades || META_DEF().grades).slice(); S.meta.grades[+prop.slice(5)] = v; queueSave(); return; }
   const o = find(S.sel); if (!o || selIds().length !== 1) return;
+  const headWas = o.head, colsWas = o.cols;
   if (S.editing === o.id) S.editDirty = true; else snapOnce(o.id + prop);
   if (prop === 'kind' && o.type === 'shape') { o.kind = v; }
   else if (prop === 'choicesTxt') { o.choices = String(v).split('\n').map(s => s.trim()).filter(Boolean).slice(0, 40); }
@@ -3281,7 +3372,14 @@ function applyProp(prop, v) {
   if (prop === 'color' && o.type === 'highlight') { P.markColor = v; savePrefs(); }
   if (prop === 'gap') o.h = Math.max(v, Math.round(o.h / v) * v);
   if (o.type === 'coord') fixCoord(o);
+  if (prop === 'lrows') { delete o.lrows; o.rows = v + (o.head === 'row' ? 1 : 0); }
+  if (prop === 'head' && isList(o) && v !== headWas) {
+    /* Überschriftenzeile oben einfügen bzw. entfernen, Einträge bleiben */
+    if (v === 'row') { o.cells.unshift(Array.from({ length: o.cols }, (_, c) => ['Nr.', 'Name', 'erledigt'][c] && o.ct[c] === ['num', 'text', 'check'][c] ? ['Nr.', 'Name', 'erledigt'][c] : 'Spalte ' + (c + 1))); o.rows++; }
+    else { o.cells.shift(); o.rows = Math.max(1, o.rows - 1); }
+  }
   if (o.type === 'table') fixTable(o);
+  if (prop === 'cols' && isList(o) && o.head === 'row') { for (let c = colsWas; c < o.cols; c++) if (!o.cells[0][c]) o.cells[0][c] = 'Spalte ' + (c + 1); fixTable(o); }
   if (prop === 'font' && (o.font === 'mono' || isCustom(o.font))) o.runs = normRuns(runsOf(o).map(r => Object.assign({}, r, { i: false })));
   renderObjs(o.page, S.editing === o.id); queueSave();
 }
@@ -3289,9 +3387,14 @@ panel.addEventListener('input', e => {
   const t = e.target;
   if (t.dataset.cell) {
     const o = find(S.sel); if (!o || o.type !== 'table') return;
-    snapOnce(o.id + 'cell' + t.dataset.cell + S.tableSol);
+    const sol = !isList(o) && S.tableSol;
+    if (t.type === 'checkbox') snap(); else snapOnce(o.id + 'cell' + t.dataset.cell + sol);
     const [r, c] = t.dataset.cell.split(',').map(Number);
-    (S.tableSol ? o.sol : o.cells)[r][c] = t.value; fixTable(o); renderObjs(o.page); queueSave(); return;
+    (sol ? o.sol : o.cells)[r][c] = t.type === 'checkbox' ? (t.checked ? 'x' : '') : t.value; fixTable(o); renderObjs(o.page); queueSave(); return;
+  }
+  if (t.dataset.lhead != null) {
+    const o = find(S.sel); if (!isList(o) || o.head !== 'row') return;
+    snapOnce(o.id + 'lhead' + t.dataset.lhead); o.cells[0][+t.dataset.lhead] = t.value; fixTable(o); renderObjs(o.page); queueSave(); return;
   }
   if (t.dataset.fn) {
     const o = find(S.sel); if (!o || o.type !== 'coord') return;
@@ -3352,17 +3455,26 @@ panel.addEventListener('click', async e => {
   const act = b.dataset.act; if (!act) return;
   const o = find(S.sel);
   if (act.startsWith('al-')) return align(act.slice(3));
+  if (act.startsWith('lct-') && isList(o)) { const [, c, k] = act.split('-'); snap(); o.ct[+c] = k; if (k === 'check') for (let r = 0; r < o.rows; r++) if (listCellKind(o, r, +c) && !isChecked(o.cells[r][+c])) o.cells[r][+c] = ''; fixTable(o); renderObjs(o.page); renderPanel(); queueSave(); return; }
+  if (act.startsWith('lcw-') && isList(o)) {
+    const [, c, d] = act.split('-'); snapOnce(o.id + 'cw');
+    const cw = o.cw ? o.cw.slice() : Array(o.cols).fill(1), tot = cw.reduce((a, b) => a + b, 0);
+    cw[+c] = Math.max(tot * 0.05, cw[+c] + (d === '+' ? 1 : -1) * tot * 0.05); o.cw = cw.map(v => Math.round(v * 1000) / 1000);
+    fixTable(o); renderObjs(o.page); renderPanel(); queueSave(); return;
+  }
   if (act.startsWith('shape-')) { const k = act.slice(6); if (VOLL_SHAPES.has(k) && !needVoll('mathe')) return; S.shape = k; renderPanel(); return; }
   const actions = {
     edit: () => startEdit(S.sel), dup: dupSel, del: delSel, copy: copySel, paste: pasteClip, front: () => order(1), back: () => order(-1),
     multi: () => { S.multiMode = !S.multiMode; renderPanel(); if (S.multiMode) toast('Tippe weitere Elemente an. „Fertig“ beendet die Mehrfachauswahl.'); },
     addpage: addPage, duppage: dupPage, delpage: delPage, pageup: () => movePage(-1), pagedown: () => movePage(1), rotl: () => rotatePage(-1), rotr: () => rotatePage(1),
     pdfpages: () => $('#filePdf').click(), bgall: bgAll,
-    export: exportDialog, saveproj: saveProject, evaluate: () => { if (needVoll('auswertung')) $('#fileEval').click(); }, readable: readableCopy, horizon: addHorizon,
+    export: exportDialog, saveproj: saveProject, savetpl: saveTemplateDialog, evaluate: () => { if (needVoll('auswertung')) $('#fileEval').click(); }, readable: readableCopy, horizon: addHorizon,
     addfont: () => $('#fileFont').click(), about: () => showHome('about'), settings: () => showHome('settings'), 'view-sol': () => setView('sol'),
     zin: () => { setZoom(S.zoom * 1.2); renderPanel(); }, zout: () => { setZoom(S.zoom / 1.2); renderPanel(); }, zfit: () => { S.fit = true; applyZoom(); renderPanel(); },
     'tbl-cells': () => { S.tableSol = false; renderPanel(); }, 'tbl-sol': () => { S.tableSol = true; renderPanel(); },
     'tbl-fn': () => tableFromFunction(o),
+    'list-paste': () => listPasteDialog(o),
+    'list-clear': () => { snap(); for (let r = 0; r < o.rows; r++) for (let c = 0; c < o.cols; c++) if (listCellKind(o, r, c) === 'check') o.cells[r][c] = ''; renderObjs(o.page); renderPanel(); queueSave(); },
     scan: () => scanDialog(o.id),
     ocr: () => ocrPages([S.cur]), 'ocr-all': () => ocrPages(S.pages.map(q => q.id)), 'ocr-redo': () => ocrPages([S.cur], { force: true }),
     'ocr-drop': () => { const cs = ocrCarriersSync(S.cur); if (!cs.length) return; snap(); cs.forEach(c => { if (c.kind === 'page') delete page(c.pid).ocr; else delete find(c.id).ocr; }); queueSave(); renderPanel(); renderLines(S.cur); },
@@ -3405,19 +3517,23 @@ const DB = (() => {
     if (dbp) return dbp;
     dbp = new Promise((res, rej) => {
       if (!window.indexedDB) return rej(new Error('IndexedDB fehlt'));
-      const r = indexedDB.open('blattwerk', 2);
-      r.onupgradeneeded = () => { const d = r.result; ['meta', 'docs', 'pdfs', 'fonts'].forEach(n => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); }); };
-      r.onsuccess = () => { const d = r.result; d.onversionchange = () => d.close(); res(d); };
+      const r = indexedDB.open('blattwerk', 3);
+      r.onupgradeneeded = () => { const d = r.result; ['meta', 'docs', 'pdfs', 'fonts', 'tpls', 'tpldata'].forEach(n => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n); }); };
+      r.onsuccess = () => { const d = r.result; d.onversionchange = () => { d.close(); dbp = null; }; d.onclose = () => { dbp = null; }; res(d); };
       r.onerror = () => rej(r.error);
       r.onblocked = () => rej(new Error('Speicher blockiert'));
     });
     dbp.catch(() => { dbp = null; });
     return dbp;
   }
-  async function run(stores, mode, fn) {
+  async function run(stores, mode, fn, again) {
     const d = await open();
+    let t;
+    /* Verbindung inzwischen geschlossen (Speicher von außen geleert oder
+       neue Version in einem zweiten Fenster): einmal neu öffnen */
+    try { t = d.transaction(stores, mode); } catch (e) { if (again || e.name !== 'InvalidStateError') throw e; dbp = null; return run(stores, mode, fn, true); }
     return new Promise((res, rej) => {
-      const t = d.transaction(stores, mode); let out;
+      let out;
       const r = fn(t);
       if (r && 'onsuccess' in r) r.onsuccess = () => { out = r.result; };
       t.oncomplete = () => res(out); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error || new Error('abgebrochen'));
@@ -3438,6 +3554,7 @@ const DB = (() => {
     kind: async () => ((await useLS()) ? 'localStorage' : 'IndexedDB'),
     listMeta: async () => (await useLS()) ? LS.all('meta') : run(['meta'], 'readonly', t => t.objectStore('meta').getAll()),
     getDoc: async id => (await useLS()) ? LS.get('docs', id) : run(['docs'], 'readonly', t => t.objectStore('docs').get(id)),
+    pdfKeys: async () => (await useLS()) ? LS.keys('pdfs') : getAllKeys('pdfs'),
     getPdf: async key => (await useLS()) ? LS.get('pdfs', key) : run(['pdfs'], 'readonly', t => t.objectStore('pdfs').get(key)),
     putPdf: async (key, bytes) => (await useLS()) ? LS.put('pdfs', key, bytes) : run(['pdfs'], 'readwrite', t => t.objectStore('pdfs').put(bytes, key)),
     save: async (id, doc, meta) => (await useLS()) ? (LS.put('docs', id, doc), LS.put('meta', id, meta)) : run(['meta', 'docs'], 'readwrite', t => { t.objectStore('docs').put(doc, id); t.objectStore('meta').put(meta, id); }),
@@ -3447,9 +3564,114 @@ const DB = (() => {
       return run(['meta', 'docs', 'pdfs'], 'readwrite', t => { t.objectStore('meta').delete(id); t.objectStore('docs').delete(id); keys.forEach(k => t.objectStore('pdfs').delete(k)); });
     },
     listFonts: async () => (await useLS()) ? LS.keys('fonts').map(k => ({ id: k, name: (JSON.parse(localStorage.getItem('bw:fontmeta:' + k) || '{}')).name || 'Schrift', bytes: LS.get('fonts', k) })) : run(['fonts'], 'readonly', t => t.objectStore('fonts').getAll()),
+    /* Eigene Vorlagen: Kurzinfo (tpls) getrennt vom Inhalt (tpldata, Projekt-JSON),
+       damit die Liste schnell lädt */
+    listTpls: async () => ((await useLS()) ? LS.all('tpls') : run(['tpls'], 'readonly', t => t.objectStore('tpls').getAll())) || [],
+    getTpl: async id => (await useLS()) ? LS.get('tpldata', id) : run(['tpldata'], 'readonly', t => t.objectStore('tpldata').get(id)),
+    putTpl: async (id, meta, json) => (await useLS()) ? (LS.put('tpldata', id, json), LS.put('tpls', id, meta)) : run(['tpls', 'tpldata'], 'readwrite', t => { t.objectStore('tpldata').put(json, id); t.objectStore('tpls').put(meta, id); }),
+    setTplMeta: async (id, meta) => (await useLS()) ? LS.put('tpls', id, meta) : run(['tpls'], 'readwrite', t => t.objectStore('tpls').put(meta, id)),
+    delTpl: async id => (await useLS()) ? (LS.del('tpls', id), LS.del('tpldata', id)) : run(['tpls', 'tpldata'], 'readwrite', t => { t.objectStore('tpls').delete(id); t.objectStore('tpldata').delete(id); }),
     putFont: async (id, name, bytes) => (await useLS()) ? (LS.put('fonts', id, bytes), localStorage.setItem('bw:fontmeta:' + id, JSON.stringify({ name }))) : run(['fonts'], 'readwrite', t => t.objectStore('fonts').put({ id, name, bytes }, id))
   };
 })();
+/* ======================================================================
+   Zweitkopie als echte Dateien (nur App, cordova-plugin-file)
+   iOS darf den Speicher der WebView bei Platzmangel leeren. Jedes Blatt,
+   jedes Original-PDF und jede Vorlage liegt deshalb zusätzlich als Datei im
+   App-Ordner (iOS: Library/Cloud, in der Gerätesicherung enthalten). Ist der
+   WebView-Speicher beim Start leer, holt Blattwerk alles von dort zurück.
+   ====================================================================== */
+const FB = (() => {
+  const ok = () => IS_APP && typeof window.resolveLocalFileSystemURL === 'function' && window.cordova && cordova.file && (cordova.file.syncedDataDirectory || cordova.file.dataDirectory);
+  const P = fn => new Promise((res, rej) => fn(res, rej));
+  const root = () => P((res, rej) => window.resolveLocalFileSystemURL(cordova.file.syncedDataDirectory || cordova.file.dataDirectory, res, rej));
+  const dir = (d, name, create = true) => P((res, rej) => d.getDirectory(name, { create }, res, rej));
+  const base = async create => dir(await root(), 'blattwerk', create);
+  const path = async (parts, create = true) => { let d = await base(create); for (const p of parts) d = await dir(d, p, create); return d; };
+  const write = (d, name, data) => P((res, rej) => d.getFile(name, { create: true }, fe => fe.createWriter(w => {
+    w.onwriteend = () => res(); w.onerror = e => rej(e);
+    w.write(data instanceof Blob ? data : new Blob([data]));
+  }, rej), rej));
+  const read = (d, name, asText) => P((res, rej) => d.getFile(name, { create: false }, fe => fe.file(file => {
+    const r = new FileReader(); r.onloadend = () => (r.error ? rej(r.error) : res(r.result)); r.onerror = rej;
+    asText ? r.readAsText(file) : r.readAsArrayBuffer(file);
+  }, rej), rej));
+  const list = d => P((res, rej) => { const rd = d.createReader(), out = []; const step = () => rd.readEntries(es => { if (!es.length) return res(out); out.push(...es); step(); }, rej); step(); });
+  const rmDir = async parts => { try { const d = await path(parts, false); await P((res, rej) => d.removeRecursively(res, rej)); } catch (e) {} };
+  /* Schreibfehler nur einmal melden; die WebView-Kopie ist ja da */
+  let warned = false; const soft = p => p.catch(e => { console.warn('Dateisicherung', e); if (!warned) { warned = true; } });
+  let chain = Promise.resolve(); const queue = fn => (chain = chain.then(fn, fn).catch(() => {}));
+  return {
+    ok,
+    saveDoc: (id, doc, meta) => ok() && queue(() => soft((async () => { const d = await path(['docs', id]); await write(d, 'doc.json', JSON.stringify(doc)); await write(d, 'meta.json', JSON.stringify(meta)); })())),
+    putPdf: (key, bytes) => ok() && queue(() => soft((async () => { const [id, sid] = String(key).split('/'); const d = await path(['docs', id]); await write(d, (sid || 'main') + '.pdf', bytes); })())),
+    delDoc: id => ok() && queue(() => rmDir(['docs', id])),
+    putTpl: (id, meta, json) => ok() && queue(() => soft((async () => { const d = await path(['tpls', id]); await write(d, 'tpl.json', json); await write(d, 'meta.json', JSON.stringify(meta)); })())),
+    setTplMeta: (id, meta) => ok() && queue(() => soft((async () => { const d = await path(['tpls', id]); await write(d, 'meta.json', JSON.stringify(meta)); })())),
+    delTpl: id => ok() && queue(() => rmDir(['tpls', id])),
+    flush: () => chain,
+    /* Einmalig nach dem Update: alles Vorhandene als Dateien ablegen */
+    async mirrorAll(db) {
+      if (!ok()) return;
+      for (const m of await db.listMeta()) { const doc = await db.getDoc(m.id); if (doc) this.saveDoc(m.id, doc, m); }
+      for (const k of await db.pdfKeys()) { const b = await db.getPdf(k); if (b) this.putPdf(k, b); }
+      for (const t of await db.listTpls()) { const j = await db.getTpl(t.id); if (j) this.putTpl(t.id, t, j); }
+      await chain;
+    },
+    /* Alles aus den Dateien zurück in den Speicher; liefert die Anzahl Blätter */
+    async restore(db) {
+      if (!ok()) return 0;
+      let n = 0, b;
+      try { b = await base(false); } catch (e) { return 0; }
+      for (const [kind, sub] of [['docs', 'docs'], ['tpls', 'tpls']]) {
+        let d; try { d = await dir(b, sub, false); } catch (e) { continue; }
+        for (const e of await list(d)) {
+          if (!e.isDirectory) continue;
+          try {
+            const meta = JSON.parse(await read(e, 'meta.json', true));
+            if (kind === 'tpls') { await db.putTpl(e.name, meta, await read(e, 'tpl.json', true)); continue; }
+            const doc = JSON.parse(await read(e, 'doc.json', true));
+            for (const f of await list(e)) if (f.isFile && /\.pdf$/.test(f.name)) await db.putPdf(e.name + '/' + f.name.slice(0, -4), new Uint8Array(await read(e, f.name)));
+            await db.save(e.name, doc, meta); n++;
+          } catch (err) { console.warn('Wiederherstellen', e.name, err); }
+        }
+      }
+      return n;
+    },
+    /* Datei, die iOS beim „Öffnen in Blattwerk“ in Documents/Inbox legt */
+    async readUrl(url) {
+      const fe = await P((res, rej) => window.resolveLocalFileSystemURL(url, res, rej));
+      const buf = await P((res, rej) => fe.file(file => { const r = new FileReader(); r.onloadend = () => (r.error ? rej(r.error) : res(r.result)); r.readAsArrayBuffer(file); }, rej));
+      P((res, rej) => fe.remove(res, rej)).catch(() => {});
+      return { name: decodeURIComponent(fe.name || String(url).split('/').pop() || 'Dokument.pdf'), buf };
+    }
+  };
+})();
+/* Jede Speicheroperation geht zusätzlich in die Dateien */
+const DB_RAW = Object.assign({}, DB);
+DB.save = async (id, doc, meta) => { const r = await DB_RAW.save(id, doc, meta); FB.saveDoc(id, doc, meta); return r; };
+DB.putPdf = async (key, bytes) => { const r = await DB_RAW.putPdf(key, bytes); FB.putPdf(key, bytes); return r; };
+DB.del = async id => { const r = await DB_RAW.del(id); FB.delDoc(id); return r; };
+DB.putTpl = async (id, meta, json) => { const r = await DB_RAW.putTpl(id, meta, json); FB.putTpl(id, meta, json); return r; };
+DB.setTplMeta = async (id, meta) => { const r = await DB_RAW.setTplMeta(id, meta); FB.setTplMeta(id, meta); return r; };
+DB.delTpl = async id => { const r = await DB_RAW.delTpl(id); FB.delTpl(id); return r; };
+
+/* „Öffnen in Blattwerk“ (iOS): cordova-ios ruft handleOpenURL mit der Datei auf */
+let incoming = [];
+async function openIncoming(url) {
+  if (!/^file:/i.test(String(url))) return;
+  if (document.documentElement.dataset.ready !== '1') { incoming.push(url); return; }
+  const done = busy('PDF wird geöffnet …');
+  try {
+    const { name, buf } = await FB.readUrl(url);
+    const type = /\.pdf$/i.test(name) ? 'application/pdf' : /\.json$/i.test(name) ? 'application/json' : '';
+    /* Kein File-Konstruktor: cordova-plugin-file ersetzt window.File durch eine eigene Klasse */
+    done(); await openFile({ name, type, arrayBuffer: async () => buf });
+    if (homeVisible()) hideHome();
+  } catch (e) { done(); console.error(e); toast('Die Datei ließ sich nicht öffnen.'); }
+}
+window.handleOpenURL = url => setTimeout(() => openIncoming(url), 0);
+
 let saveT = 0, saving = Promise.resolve(), storageWarned = false;
 function queueSave() { clearTimeout(saveT); saveT = setTimeout(() => { flushSave(); }, 900); }
 function flushSave() {
@@ -3529,6 +3751,7 @@ function cleanState(raw) {
         fixCoord(c); break;
       case 'formula': Object.assign(c, { src: str(o.src, '', 2000), size: clamp(num(o.size, 14), 4, 120), color: color('#000000') }); break;
       case 'table': Object.assign(c, { rows: o.rows, cols: o.cols, cells: o.cells, sol: o.sol, rh: clamp(num(o.rh, 20), 8, 200), size: clamp(num(o.size, 11), 4, 48), head: ['row', 'col', 'none'].includes(o.head) ? o.head : 'none', fill: !!o.fill, name: str(o.name, 'Tabelle', 120), cw: Array.isArray(o.cw) && o.cw.every(v => typeof v === 'number' && v > 0) ? o.cw : null });
+        if (o.kind === 'list') { c.kind = 'list'; c.ct = Array.isArray(o.ct) ? o.ct.map(String) : []; }
         c.cells = (Array.isArray(c.cells) ? c.cells : []).map(r => (Array.isArray(r) ? r : []).map(v => str(v, '', 500)));
         c.sol = (Array.isArray(c.sol) ? c.sol : []).map(r => (Array.isArray(r) ? r : []).map(v => str(v, '', 500)));
         fixTable(c); break;
@@ -3787,9 +4010,10 @@ async function deliverFiles(files) {
     try {
       const urls = [];
       for (const f of files) urls.push('df:' + f.name + ';' + await blobToDataUrl(f.blob));
-      await new Promise((res, rej) => sharer.shareWithOptions({ subject: files[0].name.replace(/\.[a-z]+$/i, ''), files: urls, chooserTitle: files.length > 1 ? 'Blattwerk' : files[0].name, iPadPopupCoordinates: iPadShareAnchor() }, res, rej));
+      const r = await new Promise((res, rej) => sharer.shareWithOptions({ subject: files[0].name.replace(/\.[a-z]+$/i, ''), files: urls, chooserTitle: files.length > 1 ? 'Blattwerk' : files[0].name, iPadPopupCoordinates: iPadShareAnchor() }, res, rej));
+      return !!(r && r.completed);
     } catch (err) { console.error('Teilen fehlgeschlagen', err); toast('Das Teilen-Menü ließ sich nicht öffnen.'); }
-    return;
+    return false;
   }
   if (IS_APP) { toast('Teilen ist auf diesem Gerät nicht verfügbar.'); return; }
   for (const f of files) {
@@ -3991,7 +4215,7 @@ async function homeMainHTML() {
     <header class="home-head">${$('.brand .logo').outerHTML}<div><h1>Blattwerk</h1><p>Arbeitsblätter als PDF – ausfüllbar, mit Hilfen und Lösungen, ganz ohne Internet.</p></div></header>
     ${cont}
     <div class="home-tiles">
-      <button class="home-tile" data-h="new">${hi('new')}<div><b>Neues Blatt</b><span>Leeres Blatt mit Kästchen, Linien, Punkten oder Koordinatensystem</span></div></button>
+      <button class="home-tile" data-h="new">${hi('new')}<div><b>Neues Blatt</b><span>Arbeitsblatt, Klassenarbeit, Liste, Brief – oder aus deinen Vorlagen</span></div></button>
       <button class="home-tile" data-h="open">${hi('open')}<div><b>PDF öffnen</b><span>Arbeitsblatt, Schulbuchseite oder Blattwerk-Projekt vom Gerät</span></div></button>
       <button class="home-tile" data-h="sample">${hi('sample')}<div><b>Beispielblatt</b><span>Alle Funktionen an einem fertigen Mathe-Blatt ausprobieren</span></div></button>
       <button class="home-tile" data-h="lib">${hi('lib')}<div><b>Meine Blätter</b><span>${metas.length} ${metas.length === 1 ? 'Blatt' : 'Blätter'} auf diesem Gerät</span></div></button>
@@ -4038,7 +4262,8 @@ async function settingsHTML() {
     </section>
     <section class="home-card"><h2>Neues Blatt</h2>
       ${pRow('Hintergrund', pSeg('bg', BG_TYPES.map(([t, l]) => [t, l])))}
-      ${pTog('head', 'Kopfzeile mit Name, Klasse und Datum')}
+      ${pTog('head', 'Arbeitsblätter mit Name, Klasse und Datum')}
+      <div class="home-foot"><button class="btn" data-h="tpls">Meine Vorlagen verwalten</button></div>
     </section>
     <section class="home-card"><h2>Notenschlüssel (Vorgabe für neue Blätter)</h2>
       <div class="rng" style="grid-template-columns:auto auto">${P.grades.map((v, i) => `<span>Note ${i + 1} ab</span><span><input class="tin" style="max-width:80px" inputmode="decimal" data-pgrade="${i}" value="${String(v).replace('.', ',')}" aria-label="Note ${i + 1} ab Prozent"> %</span>`).join('')}</div>
@@ -4097,8 +4322,12 @@ function aboutHTML() {
       <details><summary>Klassenarbeit und Erwartungshorizont</summary><p>Setze an jede Aufgabe ein <b>Punktekästchen</b> mit Punktzahl, Anforderungsbereich, Kompetenz und erwarteter Leistung. Rechts siehst du Summe, Verteilung der AFB und den Notenschlüssel. „Erwartungshorizont als Seite anfügen“ erzeugt eine Tabelle, die nur im Lösungsblatt erscheint.</p></details>
       <details><summary>Ausgefüllte PDFs auswerten</summary><p>Unter „Ausgefüllte PDFs auswerten“ wählst du die zurückgegebenen Schüler-PDFs aus. Blattwerk vergleicht die Eingaben mit den Lösungen und zeigt je Aufgabe den Anteil richtiger Antworten und häufige Fehler, je Schüler die Ergebnisse. „2,5“, „5/2“ und „2.5“ zählen gleich. Freie Antworten bitte selbst prüfen. Die Dateien werden nur gelesen und nicht gespeichert; eine Tabelle (CSV) sicherst du bei Bedarf.</p>
         <p><b>Korrigierte PDFs zurückgeben</b>: Blattwerk setzt in jedes Schüler-PDF grüne Häkchen und rote Kreuze, auf Wunsch die richtige Lösung, oben das Ergebnis und deinen Kommentar. Die Antworten lassen sich dabei einfrieren. Alle Dateien gehen gesammelt über das Teilen-Menü zurück, zum Drucken auch als eine Datei.</p></details>
+      <details><summary>Neues Blatt: Blattarten und eigene Vorlagen</summary><p>Unter <b>Neu</b> wählst du, was entstehen soll: <b>Arbeitsblatt</b>, <b>Klassenarbeit</b>, <b>Liste</b>, <b>Brief / Info</b> oder ein <b>leeres Blatt</b>. Die Kopfzeile stellst du getrennt ein: <b>Titel</b> und <b>Name, Klasse, Datum</b>.</p>
+        <p>Ein fertiges Blatt, das du öfter brauchst (eine Abhakliste, ein Elternbrief mit Schulkopf, ein Gerüst für Klassenarbeiten), sicherst du rechts mit <b>Als Vorlage sichern</b>. Es erscheint dann unter „Neu“ bei <b>Meine Vorlagen</b>; jedes neue Blatt daraus ist eine Kopie. Umbenennen und löschen kannst du Vorlagen unter „Verwalten“ oder in den Einstellungen.</p></details>
+      <details><summary>Tabellen und Listen zum Abhaken</summary><p>Das Werkzeug <b>Tabelle</b> (unter „Mehr“) legt eine Liste an, etwa Nr. | Name | erledigt. Für jede Spalte wählst du die Art: <b>Text</b> steht fest im PDF, <b>Ausfüllbar</b> wird im PDF zum Textfeld, <b>Abhaken</b> setzt in jede Zeile ein Kästchen, <b>Nummer</b> zählt 1, 2, 3 … von selbst. Überschriften trägst du rechts ein, die Breite der Spalten stellst du mit − und + ein.</p>
+        <p><b>Namen einfügen</b> übernimmt eine kopierte Klassenliste, ein Name pro Zeile, auf Wunsch alphabetisch sortiert. Abhaken kannst du rechts, direkt auf dem Blatt (Tabelle antippen, dann das Kästchen) und später im geteilten PDF in jeder PDF-App. Für Mathe gibt es weiterhin die <b>Wertetabelle</b>.</p></details>
       <details><summary>Lesefreundliche Kopie</summary><p>Erstellt eine zweite Fassung mit mindestens 13 pt Schrift und mehr Zeilenabstand. Inhalte rutschen nach unten und laufen bei Bedarf auf eine neue Seite. Das Original bleibt erhalten.</p></details>
-      <details><summary>Speichern und Datenschutz</summary><p>Blätter, Bilder und eigene Schriften liegen nur auf diesem Gerät. Blattwerk überträgt keine Daten, hat keine Werbung und kein Tracking. Nur für die Vollversion fragt das Gerät beim ${IS_APP ? storeName() : 'App Store'} nach Preis und Kauf – das wickelt das Betriebssystem ab, Blätter und Schülerdaten sind daran nicht beteiligt. Zur Sicherung oder für ein anderes Gerät exportierst du ein Blatt als Projektdatei (Strg+S oder „Projekt als Datei sichern“).</p></details>
+      <details><summary>Speichern und Datenschutz</summary><p>Blätter, Bilder und eigene Schriften liegen nur auf diesem Gerät. In der App legt Blattwerk zusätzlich eine Sicherungskopie als Datei im eigenen App-Ordner ab; leert das System den Speicher, kommt beim nächsten Start alles von dort zurück. PDFs aus Mail oder der Dateien-App öffnest du auf dem iPhone und iPad direkt mit „Teilen → Blattwerk“. Blattwerk überträgt keine Daten, hat keine Werbung und kein Tracking. Nur für die Vollversion fragt das Gerät beim ${IS_APP ? storeName() : 'App Store'} nach Preis und Kauf – das wickelt das Betriebssystem ab, Blätter und Schülerdaten sind daran nicht beteiligt. Zur Sicherung oder für ein anderes Gerät exportierst du ein Blatt als Projektdatei (Strg+S oder „Projekt als Datei sichern“).</p></details>
       <details><summary>Tastenkürzel (iPad mit Tastatur, Computer)</summary><p class="kbd">${TOOLS.map(t => `<b>${t.key.toUpperCase()}</b> ${esc(t.label)}`).join(' · ')}<br><b>Strg+C / V</b> kopieren / einfügen · <b>Strg+D</b> duplizieren · <b>Strg+A</b> alles auf der Seite · <b>Strg+Z</b> rückgängig · <b>Strg+S</b> Projektdatei · <b>Strg+B / I / U</b> beim Schreiben · <b>Pfeiltasten</b> verschieben · <b>Entf</b> löschen</p></details>
     </section>
     ${vollSectionHTML()}
@@ -4122,6 +4351,7 @@ homeEl.addEventListener('click', async e => {
     case 'open': $('#fileOpen').click(); break;
     case 'sample': newSheet(true); break;
     case 'lib': libraryDialog(); break;
+    case 'tpls': templatesDialog(); break;
     case 'recent': {
       homeBusy = true; const done = busy('Blatt wird geöffnet …');
       try { await openStored(b.dataset.id); } finally { done(); homeBusy = false; }
@@ -5208,8 +5438,48 @@ function ocrImagePanel(o) {
 /* ======================================================================
    Feldnamen und QR-Inhalt
    ====================================================================== */
+/* Namen (oder andere Einträge) zeilenweise in eine Spalte übernehmen,
+   etwa eine kopierte Klassenliste. Bei Tabulatoren füllen sich die folgenden
+   Spalten mit (aus Tabellenkalkulationen kopiert). */
+function listPasteDialog(o) {
+  if (!isList(o)) return;
+  const r0 = o.head === 'row' ? 1 : 0;
+  const cols = Array.from({ length: o.cols }, (_, c) => c).filter(c => colType(o, c) === 'text' || colType(o, c) === 'fill');
+  if (!cols.length) { toast('Keine Spalte für Text: Stelle eine Spalte auf „Text“ oder „Ausfüllbar“.'); return; }
+  const pre = cols.find(c => /name/i.test(listHead(o, c))) ?? cols[0];
+  const d = openDialog(`<h2 class="dh">Namen einfügen</h2>
+    <p class="dnote">Ein Eintrag pro Zeile, zum Beispiel eine kopierte Klassenliste. Fehlen Zeilen, kommen sie dazu (höchstens ${40 - r0}).</p>
+    <div class="row"><span class="dl">Spalte</span><select class="tin" id="lpCol">${cols.map(c => `<option value="${c}" ${c === pre ? 'selected' : ''}>${esc(listHead(o, c) || 'Spalte ' + (c + 1))}</option>`).join('')}</select></div>
+    <textarea class="tin" id="lpTxt" rows="8" placeholder="Anna Beispiel&#10;Ben Muster&#10;…" style="width:100%;min-height:160px"></textarea>
+    <label class="tg"><input type="checkbox" id="lpSort">Alphabetisch sortieren</label>
+    <div class="row end"><button class="btn" data-r="0">Abbrechen</button><button class="btn primary" data-r="1">Einfügen</button></div>`, 'wide');
+  d.addEventListener('click', e => {
+    const b = e.target.closest('[data-r]'); if (!b && e.target !== d) return;
+    if (b && b.dataset.r === '1') {
+      let lines = d.querySelector('#lpTxt').value.split(/\r?\n/).map(l => l.replace(/\s+$/, '')).filter(l => l.trim());
+      if (d.querySelector('#lpSort').checked) lines.sort((a, b) => a.localeCompare(b, 'de'));
+      if (!lines.length) { toast('Es wurde nichts eingetragen.'); return; }
+      const c0 = +d.querySelector('#lpCol').value, max = 40 - r0, cut = lines.length > max;
+      lines = lines.slice(0, max);
+      snap();
+      o.rows = Math.max(o.rows, r0 + lines.length); fixTable(o);
+      lines.forEach((l, i) => { const parts = l.split('\t'); parts.forEach((v, k) => { const c = c0 + k; if (c < o.cols && (k === 0 || colType(o, c) === 'text' || colType(o, c) === 'fill')) o.cells[r0 + i][c] = v.trim(); }); });
+      fixTable(o); renderObjs(o.page); renderPanel(); queueSave();
+      toast(`${lines.length} ${lines.length === 1 ? 'Eintrag' : 'Einträge'} eingefügt.` + (cut ? ` Mehr als ${max} passen nicht in eine Tabelle.` : ''));
+    }
+    d.remove();
+  });
+  setTimeout(() => d.querySelector('#lpTxt').focus(), 30);
+}
+/* Neue Liste: Nr. | Name | ✓ mit 10 Einträgen (oder wie übergeben) */
+function listDefaults(opt = {}) {
+  const heads = opt.heads || ['Nr.', 'Name', 'erledigt'], ct = opt.ct || ['num', 'text', 'check'], n = opt.n || 10;
+  const cells = [heads.slice()]; for (let r = 0; r < n; r++) cells.push(heads.map(() => ''));
+  return { kind: 'list', rows: n + 1, cols: heads.length, rh: opt.rh || 20, size: 11, head: 'row', fill: false, w: opt.w || 460, name: nextName('table', opt.name || 'Liste'), cells, sol: [], ct, cw: opt.cw || [0.7, 3, 1.3] };
+}
 const isHeadCell = (o, r, c) => (o.head === 'row' && r === 0) || (o.head === 'col' && c === 0);
-const fillableCell = (o, r, c) => !!o.fill && !isHeadCell(o, r, c) && !String((o.cells[r] || [])[c] || '').trim();
+const fillableCell = (o, r, c) => !isList(o) && !!o.fill && !isHeadCell(o, r, c) && !String((o.cells[r] || [])[c] || '').trim();
+const listFieldCell = (o, r, c) => { const k = listCellKind(o, r, c); return k === 'fill' || k === 'check' ? k : null; };
 /* Eindeutige, stabile Namen der Formularfelder. Export und Auswertung nutzen
    dieselbe Zuordnung. Punkte bilden in PDF-Formularen eine Hierarchie und
    werden deshalb ersetzt. */
@@ -5230,7 +5500,10 @@ function fieldNames() {
     } else if (o.type === 'field' || o.type === 'check') map[o.id] = uname(o.name);
     else if (o.type === 'table') {
       const t = String(o.name || 'Tabelle').replace(/\./g, '_');
-      for (let r = 0; r < o.rows; r++) for (let c = 0; c < o.cols; c++) if (fillableCell(o, r, c)) map[o.id + ':' + r + ':' + c] = uname(`${t} Z${r + 1}S${c + 1}`);
+      for (let r = 0; r < o.rows; r++) for (let c = 0; c < o.cols; c++) {
+        if (fillableCell(o, r, c)) map[o.id + ':' + r + ':' + c] = uname(`${t} Z${r + 1}S${c + 1}`);
+        else if (listFieldCell(o, r, c)) map[o.id + ':' + r + ':' + c] = uname(`${t} ${listHead(o, c).replace(/\./g, '_') || 'S' + (c + 1)} ${listNum(o, r)}`);
+      }
     }
   }
   return map;
@@ -5572,9 +5845,33 @@ async function buildPdf(opts = {}) {
       if (o.label) await drawStr(o.label, keyR, o.x + o.h + 5, o.y + o.h / 2 + o.fs * baseRatio(keyR), o.fs, rgb(0, 0, 0));
     }
     async function drawTable(o) {
-      const T = tablePrims(o, { sol: showSol, hint: false });
+      const T = tablePrims(o, { sol: showSol, hint: false, forms: !showSol && isList(o) });
       await drawPrims(T.prims, o.x, o.y);
       if (showSol) return;
+      if (isList(o)) {
+        let y = 0;
+        for (let r = 0; r < o.rows; r++) {
+          let x = 0;
+          for (let c = 0; c < o.cols; c++) {
+            const k = listFieldCell(o, r, c), nm = names[o.id + ':' + r + ':' + c], v = String((o.cells[r] || [])[c] || '');
+            if (k === 'check') {
+              const b = T.L.cellLines[r][c].box, q = M(o.x + x + (T.L.cw[c] - b) / 2, o.y + y + (T.L.rh[r] + b) / 2);
+              const cb = form.createCheckBox(nm);
+              cb.addToPage(pg, { x: q.x, y: q.y, width: b, height: b, rotate: rot, borderColor: rgb(0.15, 0.17, 0.22), borderWidth: 0.9, backgroundColor: rgb(1, 1, 1), textColor: rgb(0, 0, 0) });
+              if (isChecked(v)) cb.check();
+            } else if (k === 'fill') {
+              const f = form.createTextField(nm), q = M(o.x + x + 1, o.y + y + T.L.rh[r] - 1);
+              if (T.L.rh[r] > o.size * 2.6) f.enableMultiline();
+              f.addToPage(pg, { x: q.x, y: q.y, width: Math.max(2, T.L.cw[c] - 2), height: Math.max(2, T.L.rh[r] - 2), rotate: rot, font: helv, textColor: rgb(0.05, 0.08, 0.35), borderWidth: 0, backgroundColor: rgb(0.96, 0.97, 1) });
+              f.setFontSize(o.size);
+              if (v.trim()) f.setText(stdSafe(helv, v));
+            }
+            x += T.L.cw[c];
+          }
+          y += T.L.rh[r];
+        }
+        return;
+      }
       let y = 0;
       for (let r = 0; r < o.rows; r++) {
         let x = 0;
@@ -5742,6 +6039,18 @@ function exportDialog() {
   });
   d.querySelector('[data-r="1"]').focus();
 }
+/* Nach dem dritten erfolgreichen Teilen einmal um eine Bewertung bitten.
+   Das Fenster stammt vom Betriebssystem; ob es erscheint, entscheidet iOS
+   bzw. Google Play. Blattwerk zählt nur auf dem Gerät. */
+const REVIEW_AFTER = 3;
+function afterExport() {
+  if (!IS_APP || !window.BWReview) return;
+  let n = 0, asked = false;
+  try { n = (+localStorage.getItem('bw:exports') || 0) + 1; localStorage.setItem('bw:exports', String(n)); asked = localStorage.getItem('bw:review') === '1'; } catch (e) { return; }
+  if (asked || n < REVIEW_AFTER) return;
+  try { localStorage.setItem('bw:review', '1'); } catch (e) {}
+  setTimeout(() => { try { window.BWReview.request(); } catch (e) {} }, 1500);
+}
 async function runExport(variants) {
   if (exporting) return;
   exporting = true;
@@ -5756,7 +6065,7 @@ async function runExport(variants) {
       files.push({ name: safeFileName(docName() + VARIANT_SUFFIX[v]) + '.pdf', blob: new Blob([r.bytes], { type: 'application/pdf' }) });
     }
     done();
-    await deliverFiles(files);
+    if (await deliverFiles(files)) afterExport();
     if (raster) toast('Ein Original-PDF ist geschützt. Seine Seiten wurden deshalb als Bild übernommen.', null, 7000);
     if (replaced) toast(`${replaced} Zeichen gibt es in keiner der eingebauten Schriften. Sie erscheinen im PDF als „?“.`, null, 7000);
     warn.forEach(w => toast(w, null, 7000));
@@ -6197,22 +6506,60 @@ function sampleObjs(pid) {
   objs.filter(o => o.type === 'formula').forEach(computeBox);
   return objs;
 }
-function headerObjs(p) {
+/* Blattarten im Dialog „Neues Blatt“: was sie vorbelegen */
+const SHEETS = [
+  { id: 'ws', label: 'Arbeitsblatt', sub: 'Titel, Name, Klasse, Datum', title: 'Titel des Arbeitsblatts', nkd: true },
+  { id: 'exam', label: 'Klassenarbeit', sub: 'mit Punkten und Notenschlüssel', title: 'Klassenarbeit Nr. 1', nkd: true },
+  { id: 'list', label: 'Liste', sub: 'Tabelle zum Abhaken', title: 'Liste', nkd: false, bg: 'white' },
+  { id: 'info', label: 'Brief / Info', sub: 'Überschrift und Text', title: 'Information', nkd: false, bg: 'white' },
+  { id: 'blank', label: 'Leeres Blatt', sub: 'ganz ohne Vorgaben', title: '', nkd: false }
+];
+const SHEET_ICON = {
+  ws: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h5M8 15h3"/><rect x="13" y="14" width="4" height="3"/>',
+  exam: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h4M8 15h4"/><path d="M14.5 10.5h2.5v2.5h-2.5zM14.5 14.5h2.5v2.5h-2.5z"/>',
+  list: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 8h16M9 3v18"/><path d="M12 12.5l1.3 1.3 2.7-2.8M12 17l1.3 1.3 2.7-2.8"/>',
+  info: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7.5h8M8 11h8M8 14h8M8 17h5"/>',
+  blank: '<rect x="5" y="3" width="14" height="18" rx="2"/>',
+  tpl: '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M12 7.5l1.3 2.7 3 .4-2.2 2.1.5 3-2.6-1.4-2.6 1.4.5-3-2.2-2.1 3-.4z"/>'
+};
+function headerObjs(p, opt = { title: true, nkd: true }) {
   const T = (x, y, text, o = {}) => textObj(p.id, x, y, o.w, [{ t: text, b: !!o.bold }], o.size || 11);
   const F = (x, y, w, name) => ({ id: nid('o'), page: p.id, type: 'field', layer: 'base', x, y, w, h: 18, name, multi: false, size: 11, border: true, bg: true, value: '', solution: '' });
-  const m = 40, W = p.w, nw = r1(W * 0.36), y = 66;
-  let x = m + 40 + nw + 14; const kx = x; x += 46 + 56 + 14;
-  return [T(m, 28, 'Titel des Arbeitsblatts', { size: 16, bold: true, w: W - 2 * m }),
-    T(m, y + 2, 'Name:', { w: 40 }), F(m + 40, y, nw, 'Name'),
-    T(kx, y + 2, 'Klasse:', { w: 46 }), F(kx + 46, y, 56, 'Klasse'),
-    T(x, y + 2, 'Datum:', { w: 44 }), F(x + 44, y, r1(W - m - x - 44), 'Datum')];
+  const m = 40, W = p.w, nw = r1(W * 0.36), y = opt.title ? 66 : 30, out = [];
+  if (opt.title) out.push(T(m, 28, opt.titleText || 'Titel des Arbeitsblatts', { size: 16, bold: true, w: W - 2 * m }));
+  if (opt.nkd) {
+    let x = m + 40 + nw + 14; const kx = x; x += 46 + 56 + 14;
+    out.push(T(m, y + 2, 'Name:', { w: 40 }), F(m + 40, y, nw, 'Name'),
+      T(kx, y + 2, 'Klasse:', { w: 46 }), F(kx + 46, y, 56, 'Klasse'),
+      T(x, y + 2, 'Datum:', { w: 44 }), F(x + 44, y, r1(W - m - x - 44), 'Datum'));
+  }
+  return out;
+}
+/* Abstand oben (mm), damit der Hintergrund unter der Kopfzeile beginnt */
+const headTop = (title, nkd) => title && nkd ? 32 : title || nkd ? 20 : 10;
+/* Was eine Blattart unter die Kopfzeile setzt */
+function sheetBody(kind, p, top) {
+  const m = 40, y = r1(top * MM);
+  if (kind === 'list') {
+    const o = Object.assign({ id: nid('o'), page: p.id, type: 'table', layer: 'base', x: m, y }, listDefaults({ heads: ['Nr.', 'Name', 'erledigt', 'Bemerkung'], ct: ['num', 'text', 'check', 'fill'], cw: [0.6, 3, 1.2, 3], n: 25, w: r1(p.w - 2 * m), rh: 22 }), { name: 'Liste' });
+    fixTable(o); return [o];
+  }
+  if (kind === 'exam') return [
+    textObj(p.id, m, y + 4, r1(p.w - 2 * m - 80), [{ t: '1   Aufgabentext' }], 12),
+    { id: nid('o'), page: p.id, type: 'points', layer: 'base', x: r1(p.w - m - 62), y: y, w: 62, h: 22, label: '1', max: 2, afb: 'I', comp: '', expect: '' }
+  ];
+  if (kind === 'info') return [textObj(p.id, m, y + 4, r1(p.w - 2 * m), [{ t: 'Hier steht dein Text. Antippen und losschreiben.' }], 12)];
+  return [];
 }
 function newSheet(demo, opt = {}) {
   const land = !!opt.land, p = { id: nid('p'), sid: null, src: null, w: land ? A4.h : A4.w, h: land ? A4.w : A4.h, rot: 0, orot: 0 };
-  p.bg = Object.assign({}, BG_DEF, { type: opt.bg || 'white', size: opt.bg === 'lines' ? 9 : 5, top: opt.head ? 32 : 10 });
-  const objs = demo ? sampleObjs(p.id) : opt.head ? headerObjs(p) : [];
-  if (opt.big) { const t = (opt.head ? 32 : 10) * MM; objs.push({ id: nid('o'), page: p.id, type: 'field', layer: 'base', x: r1(10 * MM), y: r1(t), w: r1(p.w - 20 * MM), h: r1(p.h - t - 10 * MM), name: 'Antwort', multi: true, size: 12, border: false, bg: false, value: '', solution: '' }); }
-  $('#docName').value = demo ? 'Lineare Funktionen (Beispiel)' : opt.head ? 'Arbeitsblatt' : 'Leeres Blatt';
+  /* opt.head (früher): Titel und Name/Klasse/Datum zusammen */
+  const kind = SHEETS.some(k => k.id === opt.kind) ? opt.kind : opt.head ? 'ws' : 'blank', def = SHEETS.find(k => k.id === kind);
+  const title = opt.title ?? !!opt.head, nkd = opt.nkd ?? !!opt.head, top = headTop(title, nkd);
+  p.bg = Object.assign({}, BG_DEF, { type: opt.bg || 'white', size: opt.bg === 'lines' ? 9 : 5, top });
+  const objs = demo ? sampleObjs(p.id) : headerObjs(p, { title, nkd, titleText: def.title || 'Titel' }).concat(opt.big ? [] : sheetBody(kind, p, top));
+  if (opt.big) { const t = top * MM; objs.push({ id: nid('o'), page: p.id, type: 'field', layer: 'base', x: r1(10 * MM), y: r1(t), w: r1(p.w - 20 * MM), h: r1(p.h - t - 10 * MM), name: 'Antwort', multi: true, size: 12, border: false, bg: false, value: '', solution: '' }); }
+  $('#docName').value = demo ? 'Lineare Funktionen (Beispiel)' : kind === 'blank' && (title || nkd) ? 'Arbeitsblatt' : def.label.replace(' / ', ' – ');
   resetDoc({ docId: nid('d'), pages: [p], objs });
   S.demo = !!demo;
   if (!demo) flushSave();
@@ -6220,22 +6567,104 @@ function newSheet(demo, opt = {}) {
 async function newDialog() {
   endEdit();
   await flushSave();
-  let sel = P.bg, land = false;
+  let tpls = [];
+  try { tpls = (await DB.listTpls()).sort((a, b) => b.created - a.created); } catch (e) {}
+  let kind = SHEETS.some(k => k.id === P.sheet) ? P.sheet : 'ws', sel = P.bg, land = false;
+  const tile = (id, label, sub, icon, extra = '') => `<button class="kind" data-kind="${esc(id)}" ${extra}><svg class="i" viewBox="0 0 24 24" aria-hidden="true">${icon}</svg><span><b>${esc(label)}</b><small>${esc(sub)}</small></span></button>`;
   const d = openDialog(`<h2 class="dh">Neues Blatt</h2>
+    <div class="kinds">${SHEETS.map(k => tile(k.id, k.label, k.sub, SHEET_ICON[k.id])).join('')}</div>
+    ${tpls.length ? `<h3 class="dsub">Meine Vorlagen <button class="linkbtn" data-tplman="1">Verwalten</button></h3><div class="kinds">${tpls.map(t => tile('tpl:' + t.id, t.name, t.npages + (t.npages === 1 ? ' Seite' : ' Seiten'), SHEET_ICON.tpl)).join('')}</div>` : ''}
+    <div class="nd-opts">
     <div class="tiles">${BG_TYPES.map(([t, l]) => `<button class="tile" data-bg="${t}" aria-pressed="${t === sel}">${bgPreview(t)}<span>${l}</span></button>`).join('')}</div>
     <div class="row"><span class="dl">Format</span><div class="seg"><button data-land="0" aria-pressed="true">Hochformat</button><button data-land="1" aria-pressed="false">Querformat</button></div></div>
-    <label class="tg"><input type="checkbox" id="nhHead" ${P.head ? 'checked' : ''}>Kopfzeile mit Titel, Name, Klasse und Datum (ausfüllbar)</label>
+    <div class="row nd-head"><span class="dl">Kopfzeile</span><div><label class="tg"><input type="checkbox" id="nhTitle">Titel</label><label class="tg"><input type="checkbox" id="nhHead">Name, Klasse, Datum (ausfüllbar)</label></div></div>
     <label class="tg"><input type="checkbox" id="nhBig">Großes Schreibfeld über die ganze Seite (zum Tippen am Tablet)</label>
-    <p class="dnote">Exportiert wird ein ausfüllbares PDF. Abstände, Rand und Linienfarbe stellst du danach rechts ein. Dein aktuelles Blatt bleibt unter „Meine Blätter“ gespeichert.</p>
+    </div>
+    <p class="dnote nd-note"></p>
     <div class="row end"><button class="btn" data-r="0">Abbrechen</button><button class="btn primary" data-r="1">Blatt anlegen</button></div>`, 'wide');
-  const close = ok => { const head = d.querySelector('#nhHead').checked, big = d.querySelector('#nhBig').checked; d.remove(); if (ok) { P.bg = sel; P.head = head; savePrefs(); newSheet(false, { bg: sel, land, head, big }); setTool('select'); } };
+  const $d = q => d.querySelector(q);
+  const setKind = k => {
+    kind = k;
+    d.querySelectorAll('[data-kind]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.kind === k)));
+    const tpl = k.startsWith('tpl:'), def = SHEETS.find(x => x.id === k);
+    $d('.nd-opts').hidden = tpl;
+    $d('.nd-note').textContent = tpl ? 'Die Vorlage wird als neues Blatt geöffnet; die Vorlage selbst bleibt unverändert.' : 'Exportiert wird ein ausfüllbares PDF. Abstände, Rand und Linienfarbe stellst du danach rechts ein. Dein aktuelles Blatt bleibt unter „Meine Blätter“ gespeichert.';
+    if (!def) return;
+    $d('#nhTitle').checked = !!def.title;
+    $d('#nhHead').checked = def.nkd && (k !== 'ws' || P.head);
+    if (def.bg) setBg(def.bg); else if (k === 'ws' || k === 'exam') setBg(P.bg);
+  };
+  const setBg = t => { sel = t; d.querySelectorAll('[data-bg]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bg === t))); };
+  const close = async ok => {
+    const title = $d('#nhTitle').checked, nkd = $d('#nhHead').checked, big = $d('#nhBig').checked;
+    d.remove(); if (!ok) return;
+    if (kind.startsWith('tpl:')) { await newFromTemplate(kind.slice(4)); setTool('select'); return; }
+    P.sheet = kind; if (kind === 'ws' || kind === 'exam') { P.bg = sel; P.head = nkd; } savePrefs();
+    newSheet(false, { kind, bg: sel, land, title, nkd, big }); setTool('select');
+  };
   d._close = () => close(false);
   d.addEventListener('click', e => {
-    const t = e.target.closest('[data-bg]'); if (t) { sel = t.dataset.bg; d.querySelectorAll('[data-bg]').forEach(b => b.setAttribute('aria-pressed', String(b === t))); return; }
+    if (e.target.closest('[data-tplman]')) { d.remove(); templatesDialog(); return; }
+    const k = e.target.closest('[data-kind]'); if (k) { setKind(k.dataset.kind); return; }
+    const t = e.target.closest('[data-bg]'); if (t) { setBg(t.dataset.bg); return; }
     const l = e.target.closest('[data-land]'); if (l) { land = l.dataset.land === '1'; d.querySelectorAll('[data-land]').forEach(b => b.setAttribute('aria-pressed', String(b === l))); return; }
     const r = e.target.closest('[data-r]'); if (r) close(r.dataset.r === '1'); else if (e.target === d) close(false);
   });
-  d.querySelector('[data-r="1"]').focus();
+  d.addEventListener('dblclick', e => { if (e.target.closest('[data-kind]')) close(true); });
+  setKind(kind);
+  $d('[data-r="1"]').focus();
+}
+
+/* ---------- Eigene Vorlagen ---------- */
+async function saveTemplateDialog() {
+  endEdit();
+  const d = openDialog(`<h2 class="dh">Als Vorlage sichern</h2>
+    <p class="dnote">Die Vorlage erscheint unter „Neues Blatt“. Jedes neue Blatt daraus ist eine Kopie; dieses Blatt und die Vorlage bleiben getrennt.</p>
+    <div class="row"><span class="dl">Name</span><input class="tin" id="tplName" maxlength="80" value="${esc(docName())}" autocomplete="off" style="flex:1"></div>
+    <div class="row end"><button class="btn" data-r="0">Abbrechen</button><button class="btn primary" data-r="1">Sichern</button></div>`);
+  const inp = d.querySelector('#tplName'); inp.select(); inp.focus();
+  const go = async ok => {
+    const name = inp.value.trim().slice(0, 80) || docName(); d.remove(); if (!ok) return;
+    try {
+      const id = nid('t');
+      await DB.putTpl(id, { id, name, created: Date.now(), npages: S.pages.length }, projectJSON());
+      toast(`Vorlage „${name}“ gesichert. Du findest sie unter „Neu“.`);
+    } catch (e) { console.error(e); toast('Die Vorlage ließ sich nicht sichern. Ist der Speicher voll?'); }
+  };
+  d._close = () => go(false);
+  d.addEventListener('click', e => { const r = e.target.closest('[data-r]'); if (r) go(r.dataset.r === '1'); else if (e.target === d) go(false); });
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(true); } });
+}
+async function newFromTemplate(id) {
+  const done = busy('Vorlage wird geöffnet …');
+  try {
+    const json = await DB.getTpl(id); if (!json) throw new Error('fehlt');
+    const meta = (await DB.listTpls()).find(t => t.id === id);
+    const obj = JSON.parse(json); if (meta) obj.name = meta.name;
+    await loadProject(obj);
+  } catch (e) { console.error(e); toast('Die Vorlage ließ sich nicht öffnen.'); }
+  finally { done(); }
+}
+async function templatesDialog() {
+  let list = [];
+  try { list = (await DB.listTpls()).sort((a, b) => b.created - a.created); } catch (e) {}
+  const d = openDialog(`<h2 class="dh">Meine Vorlagen</h2>
+    ${list.length ? `<ul class="tpl-list">${list.map(t => `<li><input class="tin" data-tplname="${esc(t.id)}" value="${esc(t.name)}" aria-label="Name der Vorlage" autocomplete="off"><button class="btn danger" data-tpldel="${esc(t.id)}">Löschen</button></li>`).join('')}</ul>` : '<p>Noch keine Vorlagen. Ein Blatt wird zur Vorlage über „Als Vorlage sichern“ in der Leiste rechts.</p>'}
+    <div class="row end"><button class="btn primary" data-r="1">Fertig</button></div>`, 'wide');
+  d.addEventListener('click', async e => {
+    const del = e.target.closest('[data-tpldel]');
+    if (del) {
+      const t = list.find(x => x.id === del.dataset.tpldel);
+      if (t && await ask(`Vorlage „${t.name}“ löschen? Blätter, die daraus entstanden sind, bleiben erhalten.`, 'Löschen')) { await DB.delTpl(t.id); del.closest('li').remove(); }
+      return;
+    }
+    if (e.target.closest('[data-r]') || e.target === d) d.remove();
+  });
+  d.addEventListener('change', async e => {
+    const inp = e.target.closest('[data-tplname]'); if (!inp) return;
+    const t = list.find(x => x.id === inp.dataset.tplname); const v = inp.value.trim().slice(0, 80);
+    if (t && v) { t.name = v; await DB.setTplMeta(t.id, t); } else if (t) inp.value = t.name;
+  });
 }
 
 /* ======================================================================
@@ -6346,6 +6775,14 @@ async function boot() {
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}
   let opened = false;
   try {
+    if (FB.ok() && !(await DB.listMeta()).length) {
+      const n = await FB.restore(DB_RAW);
+      if (n) toast(`${n} ${n === 1 ? 'Blatt wurde' : 'Blätter wurden'} aus der Dateisicherung wiederhergestellt.`, null, 7000);
+    }
+    /* Wer von 1.3 kommt, hat noch keine Dateien: einmal alles sichern (im Hintergrund) */
+    if (FB.ok()) { let done = null; try { done = localStorage.getItem('bw:fb'); } catch (e) {} if (!done) FB.mirrorAll(DB_RAW).then(() => { try { localStorage.setItem('bw:fb', '1'); } catch (e) {} }).catch(e => console.warn('Dateisicherung', e)); }
+  } catch (e) { console.warn('Dateisicherung', e); }
+  try {
     const metas = (await DB.listMeta()).sort((a, b) => b.updated - a.updated);
     if (metas.length) opened = await openStored(metas[0].id, true);
   } catch (e) { console.warn('Gerätespeicher nicht verfügbar', e); }
@@ -6353,6 +6790,8 @@ async function boot() {
   S.booting = false;
   if (P.start === 'home' || !opened) await showHome('main');
   document.documentElement.dataset.ready = '1';
+  const wait = incoming; incoming = [];
+  for (const u of wait) await openIncoming(u);
 }
 if (IS_APP) document.addEventListener('deviceready', boot, { once: true }); else boot();
 
@@ -6361,7 +6800,7 @@ window.__bw = { S, DB, usedImgs, ocrPages, ocrLines, ocrWords, ocrTargets, ocrPa
   compileExpr, parseMath, layoutText, textWidth, cleanState, loadProject, projectJSON, insertPdfPages, rotatePage, selectIds, copySel, pasteClip, undo, redo, snap, renderAll,
   createAt, createRect, applyRunStyle, startEdit, endEdit, find, examStats, openStored, newSheet, exportDialog, runExport, evalCSV, fixTable, fixCoord,
   P, savePrefs, showHome, hideHome, homeVisible, detectFields, eraseKeys, eraseItems, eraseRect, ensureGfx, prepareErase, splitPageAt, setSplitMode,
-  formCheck, correctedPdfs, fieldType, renderObjs, renderLines, setTool, setView, toggleMoreTools, lineAt, buildTools, offerOcr,
+  formCheck, correctedPdfs, tableLayout, fieldType, renderObjs, renderLines, setTool, setView, toggleMoreTools, lineAt, buildTools, offerOcr, FB, DB_RAW, newDialog, saveTemplateDialog, templatesDialog, newFromTemplate, listToggleAt, listPasteDialog,
   Voll, hasVoll, needVoll, vollDialog, buyVoll, restoreVoll, setLayer, addHorizon };
 })();
 </script>

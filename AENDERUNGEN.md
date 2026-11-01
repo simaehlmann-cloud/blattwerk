@@ -1,5 +1,39 @@
 # Änderungen
 
+## 1.4.0 – Mehr als Arbeitsblätter (November 2026)
+
+- **Neues Blatt mit Blattarten:** Arbeitsblatt, Klassenarbeit, Liste,
+  Brief / Info oder leeres Blatt. Die Kopfzeile ist geteilt: *Titel* und
+  *Name, Klasse, Datum* lassen sich einzeln abwählen. Die letzte Wahl wird
+  gemerkt.
+- **Tabelle für Listen** (neues Werkzeug, Taste J): Spaltenarten *Text*,
+  *Ausfüllbar*, *Abhaken* und *Nummer* (zählt selbst), Überschriftenzeile,
+  Spaltenbreiten, bis 40 Zeilen. **Namen einfügen** übernimmt eine kopierte
+  Klassenliste (auf Wunsch sortiert). Abhaken geht im Panel, direkt auf dem
+  Blatt (Tabelle gewählt, Kästchen antippen) und im geteilten PDF. Was in
+  Blattwerk abgehakt oder eingetragen ist, steht im PDF schon drin und bleibt
+  dort änderbar.
+- Die bisherige Tabelle heißt jetzt **Wertetabelle** und funktioniert wie
+  gehabt.
+- **Eigene Vorlagen:** „Als Vorlage sichern“ (rechts unter „Sichern“). Vorlagen
+  erscheinen unter „Neu → Meine Vorlagen“; umbenennen und löschen unter
+  „Verwalten“ oder in den Einstellungen. Funktioniert auch mit PDF-Seiten.
+- **Sicherungskopie als Datei** (App): Blätter, Original-PDFs und Vorlagen
+  liegen zusätzlich im App-Ordner (iOS: Library/Cloud, Teil der
+  Gerätesicherung). Leert iOS den WebView-Speicher, holt Blattwerk beim Start
+  alles zurück. Beim ersten Start nach dem Update wird der Bestand einmal
+  gesichert.
+- **„Öffnen in Blattwerk“** (iPhone/iPad): PDFs aus Mail, Dateien oder Safari
+  über „Teilen → Blattwerk“ öffnen. Android folgt später.
+- **Bewertung:** Nach dem dritten abgeschlossenen Teilen fragt Blattwerk einmal
+  über das Bewertungsfenster von iOS bzw. Google Play.
+- Liste, Blattarten und Vorlagen sind kostenlos.
+
+### Behoben
+
+- Wird der Speicher von außen geschlossen (zweites Fenster, Bereinigung),
+  verbindet sich Blattwerk neu, statt bis zum Neustart nichts mehr zu sichern.
+
 ## 1.3.0 – Kostenlos mit Vollversion (Oktober 2026)
 
 - **Blattwerk ist kostenlos.** Ein einmaliger In-App-Kauf (3,99 €, kein Abo)

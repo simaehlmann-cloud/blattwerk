@@ -1241,7 +1241,7 @@ async function main() {
   const visTools = async () => page.evaluate(() => [...document.querySelectorAll('#tools [data-tool]')].filter(b => b.offsetParent).map(b => b.dataset.tool).join(','));
   check('Einfach: nur sechs Grundwerkzeuge plus „Mehr“', (await visTools()) === 'select,text,highlight,erase,image,field' && await page.isVisible('#toolsMore'), await visTools());
   await page.click('#toolsMore');
-  check('„Mehr“ klappt alle übrigen Werkzeuge auf', (await visTools()).split(',').length === 17);
+  check('„Mehr“ klappt alle übrigen Werkzeuge auf', (await visTools()).split(',').length === 18, await visTools());
   await page.click('[data-tool="coord"]');
   check('Werkzeug aus „Mehr“ gewählt: Leiste klappt zu, gewähltes bleibt sichtbar', (await visTools()) === 'select,text,highlight,erase,image,field,coord' && (await S('S.tool')) === 'coord', await visTools());
   await key('v');
@@ -1569,6 +1569,7 @@ async function main() {
     await rctx.close();
   }
 
+  await require('./test/neu-1.4.js')({ browser, base, check, section, OUT, pdfText, PDFDocument, fs, path, fixturePdf });
   check('Keine Fehler während des ganzen Laufs', errs.length === 0, errs.slice(0, 3).join(' / '));
   await browser.close(); srv.close();
 }

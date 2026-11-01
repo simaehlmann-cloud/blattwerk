@@ -103,17 +103,7 @@ module.exports = [
     }
   },
   {
-    was: 'Klassenarbeit: Erwartungshorizont auf Knopfdruck',
-    nur: 'ipad',
-    tu: async ({ B }) => {
-      await B(`${dialogeZu}; B.setView('sol'); B.addHorizon(); B.selectIds([]); ${breite()}
-        const pgs = document.querySelectorAll('.page'), st2 = document.getElementById('stage');
-        st2.scrollTop += pgs[pgs.length - 1].getBoundingClientRect().top - st2.getBoundingClientRect().top - 12;`);
-    }
-  },
-  {
     was: 'Startbildschirm: alles bleibt auf dem Gerät',
-    nur: 'iphone',
     tu: async ({ B }) => { await B(`${dialogeZu}; B.selectIds([]); await B.showHome('main')`); }
   }
 ];

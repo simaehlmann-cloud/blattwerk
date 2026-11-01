@@ -89,6 +89,21 @@ if (!/<plugin name="cordova-plugin-x-socialsharing"/.test(config)) E('Teilen-Plu
   if (!/Vollversion/.test(read('make-legal-pages.py'))) E('Datenschutzerklärung erwähnt den Kauf der Vollversion nicht');
   if (errors.length === n0) O(`In-App-Kauf: Plugin ${purch}, Produkt-ID ${vollId}, Wiederherstellen, Lizenz und Datenschutz`);
 }
+/* Dateisicherung, „Öffnen in Blattwerk“ und Bewertung (seit 1.4.0) */
+{
+  const n0 = errors.length;
+  const fileV = (config.match(/<plugin name="cordova-plugin-file" spec="([^"]+)"/) || [])[1];
+  if (!fileV || !/^\d+\.\d+\.\d+$/.test(fileV)) E('cordova-plugin-file fehlt oder ohne genaue Version');
+  else if (!read('make-legal-pages.py').includes('cordova-plugin-file ' + fileV)) E(`Lizenzen nennen cordova-plugin-file ${fileV} nicht`);
+  if (!/<string>com\.adobe\.pdf<\/string>/.test(config) || !/LSSupportsOpeningDocumentsInPlace[\s\S]{0,120}<false\/>/.test(config)) E('config.xml: PDF-Dokumenttyp oder LSSupportsOpeningDocumentsInPlace=false fehlt');
+  if (!/window\.handleOpenURL\s*=/.test(js)) E('window.handleOpenURL fehlt – iOS kann geöffnete PDFs nicht übergeben');
+  if (/new File\(/.test(js)) E('new File(…) im Skript: cordova-plugin-file ersetzt window.File, das bricht in der App');
+  if (!/<plugin name="bw-review" spec="\.\/plugins-local\/bw-review"/.test(config)) E('Bewertungs-Plugin fehlt in config.xml');
+  for (const f of ['plugin.xml', 'www/review.js', 'src/ios/BWReview.m', 'src/android/BWReview.java']) if (!exists('plugins-local/bw-review/' + f)) E(`plugins-local/bw-review/${f} fehlt`);
+  for (const [name, wf] of [['android.yml', wfAndroid], ['ios.yml', wfIos]]) if (!/cp -R plugins-local build\//.test(wf)) E(`${name} kopiert plugins-local nicht in den Bauordner`);
+  if (!/LSSupportsOpeningDocumentsInPlace/.test(wfIos)) E('ios.yml prüft die Dokumenttypen in der Info.plist nicht');
+  if (errors.length === n0) O(`Dateisicherung (cordova-plugin-file ${fileV}), „Öffnen in Blattwerk“, Bewertungs-Plugin`);
+}
 
 /* ---------- 4. Dateien, auf die index.html verweist ---------- */
 const refs = new Set();

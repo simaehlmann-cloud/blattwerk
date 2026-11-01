@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Eigenes kleines Plugin: zeigt das Bewertungsfenster des Betriebssystems.
+     iOS: SKStoreReviewController (Apple entscheidet, ob es erscheint, höchstens
+     dreimal im Jahr). Android: Google Play In-App Review. Keine Netzwerkzugriffe
+     durch Blattwerk selbst, keine Daten. -->
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android"
+        id="bw-review" version="1.0.0">
+    <name>BlattwerkReview</name>
+    <license>MIT</license>
+    <js-module src="www/review.js" name="BWReview">
+        <clobbers target="BWReview" />
+    </js-module>
+    <platform name="ios">
+        <config-file target="config.xml" parent="/*">
+            <feature name="BWReview"><param name="ios-package" value="BWReview" /></feature>
+        </config-file>
+        <source-file src="src/ios/BWReview.m" />
+        <framework src="StoreKit.framework" />
+    </platform>
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="BWReview"><param name="android-package" value="de.blattwerk.review.BWReview" /></feature>
+        </config-file>
+        <source-file src="src/android/BWReview.java" target-dir="src/de/blattwerk/review" />
+        <framework src="com.google.android.play:review:2.0.2" />
+    </platform>
+</plugin>
