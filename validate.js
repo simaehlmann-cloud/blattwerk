@@ -99,8 +99,10 @@ if (!/<plugin name="cordova-plugin-x-socialsharing"/.test(config)) E('Teilen-Plu
   if (!/window\.handleOpenURL\s*=/.test(js)) E('window.handleOpenURL fehlt – iOS kann geöffnete PDFs nicht übergeben');
   if (/new File\(/.test(js)) E('new File(…) im Skript: cordova-plugin-file ersetzt window.File, das bricht in der App');
   if (!/<plugin name="bw-review" spec="\.\/plugins-local\/bw-review"/.test(config)) E('Bewertungs-Plugin fehlt in config.xml');
-  for (const f of ['plugin.xml', 'www/review.js', 'src/ios/BWReview.m', 'src/android/BWReview.java']) if (!exists('plugins-local/bw-review/' + f)) E(`plugins-local/bw-review/${f} fehlt`);
+  /* Cordova verlangt auch bei lokalen Plugins eine package.json (1.4.0: Build daran gescheitert) */
+  for (const f of ['package.json', 'plugin.xml', 'www/review.js', 'src/ios/BWReview.m', 'src/android/BWReview.java']) if (!exists('plugins-local/bw-review/' + f)) E(`plugins-local/bw-review/${f} fehlt`);
   for (const [name, wf] of [['android.yml', wfAndroid], ['ios.yml', wfIos]]) if (!/cp -R plugins-local build\//.test(wf)) E(`${name} kopiert plugins-local nicht in den Bauordner`);
+  try { const pj = JSON.parse(read('plugins-local/bw-review/package.json')); if (pj.name !== 'bw-review' || !pj.cordova || pj.cordova.id !== 'bw-review') E('plugins-local/bw-review/package.json: name bzw. cordova.id muss bw-review sein'); } catch (e) { E('plugins-local/bw-review/package.json fehlt oder ist kein JSON'); }
   if (!/LSSupportsOpeningDocumentsInPlace/.test(wfIos)) E('ios.yml prüft die Dokumenttypen in der Info.plist nicht');
   if (errors.length === n0) O(`Dateisicherung (cordova-plugin-file ${fileV}), „Öffnen in Blattwerk“, Bewertungs-Plugin`);
 }
